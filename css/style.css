@@ -1,0 +1,1107 @@
+@font-face {
+  font-family: 'Shelley Script LT Std';
+  src: url('../fonts/ShelleyScriptLTStd.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Arima Madurai';
+  src: url('../fonts/ArimaMadurai-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Genty';
+  src: url('../fonts/Genty-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'The Mumbai Sticker';
+  src: url('../fonts/TheMumbaiSticker-Regular.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Sloop Script';
+  src: url('../fonts/SloopScript-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --cream: #fdf6ee;
+  --cream-dark: #f2e6d8;
+  --ink: #33170a;
+  --ink-soft: #7c3b1a;
+  --gold: #66280a;
+  --gold-light: #9a5833;
+  --gold-pale: #c9975e;
+  --blush: #e3c2ac;
+  --green-deep: #2e1608;
+  --espresso: #170a04;
+  --noir: #0c0500;
+  --white: #ffffff;
+  --radius: 6px;
+  --serif: 'Shelley Script LT Std', cursive;
+  --sans: 'Arima Madurai', sans-serif;
+  --amp-font: 'The Mumbai Sticker', cursive;
+  --s-font: 'Sloop Script', cursive;
+
+  /* Envelope de abertura: degradê de marrom claro (topo) para marrom
+     escuro (embaixo), sem branco (ver ".envelope__base"). */
+  --envelope-brown: #7a3a15;
+  --envelope-brown-old: #3d1607;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: var(--sans);
+  color: var(--ink);
+  background: var(--cream);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+img { max-width: 100%; display: block; }
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.container--narrow {
+  max-width: 720px;
+}
+
+.section-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-size: 0.75rem;
+  color: var(--gold);
+  text-align: center;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.section-eyebrow--light { color: var(--gold-pale); }
+
+.section-title {
+  font-family: var(--serif);
+  font-size: clamp(2.4rem, 5vw, 3.5rem);
+  text-align: center;
+  margin: 0 0 40px;
+  color: var(--ink);
+  font-weight: normal;
+}
+
+.section-title--light { color: var(--white); }
+
+/* ENVELOPE INTRO */
+/* Ocupa a tela inteira: fundo em degradê (marrom escuro no topo -> marrom
+   atual -> branco) + uma aba curva no estilo "(  )" que desce do topo,
+   com o selo (imagem images/selo.png) preso bem na ponta da curva. Ao
+   clicar no selo, ele some, a aba abre pra cima e tudo vai ficando
+   transparente até revelar o convite. */
+.envelope-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  overflow: hidden;
+  transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+}
+
+.envelope-intro.is-open {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.envelope__base {
+  position: absolute;
+  inset: 0;
+  /* Degradê do envelope: marrom claro no topo -> marrom escuro embaixo,
+     sem branco. Stops em "vh" (não %) pra casar exatamente com o
+     degradê da aba abaixo, já que as duas ficam ancoradas no topo
+     da tela. */
+  background: linear-gradient(180deg, var(--envelope-brown) 0vh, var(--envelope-brown-old) 100vh);
+  transition: opacity 0.9s ease 0.7s;
+}
+
+.envelope__flap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 62vh;
+  background: linear-gradient(180deg, var(--envelope-brown) 0vh, var(--envelope-brown-old) 100vh);
+  border-radius: 0 0 50% 50% / 0 0 32vh 32vh;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  transition: transform 0.9s cubic-bezier(0.6, 0, 0.3, 1) 0.7s, opacity 0.9s ease 0.7s;
+}
+
+.envelope__seal {
+  position: absolute;
+  left: 50%;
+  top: 62vh;
+  transform: translate(-50%, -62%);
+  width: min(380px, 74vw);
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  z-index: 2;
+  animation: sealPulse 2.4s ease-in-out infinite;
+  transition: opacity 0.6s linear;
+}
+
+.envelope__seal:focus-visible {
+  outline: 2px solid var(--white);
+  outline-offset: 4px;
+  border-radius: 50%;
+}
+
+.envelope__seal-img {
+  width: 100%;
+  display: block;
+}
+
+.envelope-intro__hint {
+  position: absolute;
+  left: 50%;
+  bottom: 7vh;
+  transform: translateX(-50%);
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+  /* Essa dica fica perto do fim do degradê do envelope (marrom escuro
+     ali), por isso o texto é claro em vez de escuro. */
+  color: var(--gold-pale);
+  text-align: center;
+  z-index: 2;
+  transition: opacity 0.3s ease;
+}
+
+@keyframes sealPulse {
+  0%, 100% { transform: translate(-50%, -62%) scale(1); }
+  50% { transform: translate(-50%, -62%) scale(1.05); }
+}
+
+/* Sequência de abertura, disparada ao clicar no selo: só fica
+   translúcido aos poucos (sem encolher nem sair do lugar). */
+.envelope-intro.is-opening .envelope__seal {
+  animation: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.envelope-intro.is-opening .envelope-intro__hint {
+  opacity: 0;
+}
+
+.envelope-intro.is-opening .envelope__flap {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.envelope-intro.is-opening .envelope__base {
+  opacity: 0;
+}
+
+@media (max-width: 480px) {
+  .envelope__flap { height: 56vh; border-radius: 0 0 50% 50% / 0 0 26vh 26vh; }
+  .envelope__seal { top: 56vh; width: min(260px, 68vw); }
+  .envelope-intro__hint { font-size: 0.8rem; bottom: 5vh; }
+}
+
+/* HERO */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: linear-gradient(160deg, var(--cream-dark) 0%, var(--blush) 55%, var(--gold-light) 100%);
+  overflow: hidden;
+}
+
+.hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 20%, rgba(255,255,255,0.35), transparent 60%);
+}
+
+.hero__flower {
+  position: absolute;
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero__flower--tl {
+  width: clamp(220px, 26vw, 380px);
+  top: -30px;
+  left: -50px;
+  transform: rotate(-8deg);
+}
+
+.hero__flower--br {
+  width: clamp(160px, 18vw, 280px);
+  bottom: -40px;
+  right: -20px;
+  transform: rotate(6deg);
+}
+
+.hero__content {
+  position: relative;
+  z-index: 1;
+  padding: 24px;
+}
+
+.hero__eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-bottom: 18px;
+}
+
+.hero__names {
+  font-family: var(--serif);
+  font-size: clamp(3.5rem, 11vw, 8rem);
+  margin: 0;
+  font-weight: normal;
+  color: var(--ink);
+}
+
+.hero__names span {
+  font-family: var(--amp-font);
+  font-weight: normal;
+  font-style: normal;
+  font-size: 0.55em;
+  padding: 0 12px;
+}
+
+/* "&" usado em todo o site: The Mumbai Sticker, nunca a fonte script dos nomes.
+   Fica um pouco menor que o texto ao redor (ver referência: A4 Manual dos padrinhos) */
+.amp {
+  font-family: var(--amp-font);
+  font-weight: normal;
+  font-size: 0.75em;
+}
+
+/* "S" maiúsculo no início de palavra vira Sloop Script, mas só quando o
+   restante da palavra está em Shelley Script (aplicado via JS, ver main.js) */
+.s-flourish {
+  font-family: var(--s-font);
+  font-weight: normal;
+}
+
+.hero__divider {
+  width: 140px;
+  margin: 18px auto;
+  color: var(--gold);
+}
+
+.hero__date {
+  font-family: var(--serif);
+  font-weight: normal;
+  font-size: 2.1rem;
+  letter-spacing: 3px;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.hero__date span { color: var(--gold); }
+
+.hero__scroll {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--ink-soft);
+  text-decoration: none;
+  font-size: 1.4rem;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, 8px); }
+}
+
+/* WELCOME */
+.welcome {
+  padding: 100px 0 80px;
+  text-align: center;
+}
+
+.welcome__text {
+  font-size: 1.05rem;
+  color: var(--ink-soft);
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+/* COUNTDOWN */
+.countdown {
+  background: linear-gradient(180deg, var(--green-deep) 0%, var(--espresso) 100%);
+  padding: 90px 0;
+}
+
+.countdown__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.countdown__item {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--radius);
+  padding: 24px 8px;
+  text-align: center;
+}
+
+.countdown__number {
+  display: block;
+  font-family: var(--serif);
+  font-size: clamp(2.2rem, 5vw, 3.2rem);
+  color: var(--gold-pale);
+  font-weight: normal;
+}
+
+.countdown__label {
+  display: block;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.7);
+  margin-top: 6px;
+}
+
+/* STORY */
+.story { padding: 100px 0; }
+
+.story__couple {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+  flex-wrap: wrap;
+  margin-bottom: 70px;
+}
+
+.story__person {
+  text-align: center;
+  max-width: 260px;
+}
+
+.story__person h3 {
+  font-family: var(--serif);
+  font-weight: normal;
+  font-size: 2rem;
+  margin: 18px 0 8px;
+}
+
+.story__bio {
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+.story__heart {
+  color: var(--blush);
+  font-size: 1.8rem;
+}
+
+.photo-placeholder {
+  background: var(--cream-dark);
+  border: 1px dashed var(--gold-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  text-align: center;
+  margin: 0 auto;
+}
+
+.photo-placeholder--round {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+}
+
+.photo-placeholder--wide {
+  width: 100%;
+  max-width: 720px;
+  height: 340px;
+  border-radius: var(--radius);
+  margin-bottom: 28px;
+}
+
+.story__together {
+  text-align: center;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.story__text {
+  color: var(--ink-soft);
+}
+
+/* CEREMONY */
+.ceremony { padding: 100px 0; background: var(--cream-dark); }
+
+.ceremony__card {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 24px;
+  text-align: center;
+}
+
+.ceremony__detail {
+  background: var(--white);
+  padding: 32px 20px;
+  border-radius: var(--radius);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.05);
+  overflow: hidden;
+}
+
+/* Mapa do Google — OPÇÃO 3 (ativa): fora dos 3 blocos (Data/Local/Traje),
+   que agora ficam todos do mesmo tamanho, proporcional ao próprio texto.
+   O mapa aparece abaixo do card, ocupando a largura do container.
+   IMPORTANTE: diferente da troca entre opção 1 e 2 (só CSS), voltar para
+   a opção 1 ou 2 exige também mexer no HTML — o iframe/link precisam
+   voltar para dentro do card do meio (".ceremony__detail"), com os
+   wrappers ".ceremony__detail-info" / ".ceremony__detail-embed"; ver
+   detalhes salvos na memória do projeto (ceremony-location-block-layout). */
+.ceremony__map {
+  margin-top: 32px;
+  text-align: center;
+}
+
+/* ============================================================
+   OPÇÕES 1 e 2 (backup, precisam do HTML antigo do card do meio) —
+   endereço e mapa dentro do mesmo bloco ".ceremony__detail--map":
+   opção 1 lado a lado, opção 2 empilhado. Para voltar: restaure o
+   HTML (iframe/link dentro do card "Local") e descomente o CSS abaixo.
+
+.ceremony__detail--map {
+  display: flex;
+  flex-direction: column;   // opção 2: empilhado
+  // ou, para opção 1 (lado a lado): remova a linha flex-direction acima
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.ceremony__detail-info { text-align: center; }   // opção 2
+// opção 1: .ceremony__detail-info { flex: 1 1 auto; min-width: 0; text-align: center; }
+
+.ceremony__detail-embed { text-align: center; }   // opção 2
+// opção 1: .ceremony__detail-embed { flex: 0 0 auto; text-align: center; }
+
+   ============================================================ */
+
+.ceremony__icon {
+  font-size: 1.8rem;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.ceremony__detail h3 {
+  font-family: var(--serif);
+  font-weight: normal;
+  margin: 0 0 8px;
+  font-size: 1.7rem;
+}
+
+.ceremony__detail p {
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.ceremony__map-frame {
+  /* Opção 3: mapa fora do card, então pode ocupar mais espaço.
+     Opções 1/2 (backup) usavam width: 120px; height: 100px;. */
+  width: 100%;
+  max-width: 560px;
+  height: 260px;
+  border: 0;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  display: block;
+  margin: 0 auto;
+}
+
+.ceremony__map-link {
+  display: inline-block;
+  margin-top: 10px;
+  color: var(--gold);
+  font-size: 0.8rem;
+  text-decoration: none;
+  border-bottom: 1px solid var(--gold);
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.ceremony__map-link:hover {
+  color: var(--gold-light);
+  border-color: var(--gold-light);
+}
+
+/* WEDDING CALENDAR */
+.wedding-calendar {
+  position: relative;
+  max-width: 380px;
+  margin: 0 auto 64px;
+  text-align: center;
+}
+
+.wedding-calendar__card {
+  position: relative;
+  z-index: 1;
+  padding: 34px 12px 30px;
+}
+
+.wedding-calendar__month {
+  font-family: var(--serif);
+  font-size: 2.4rem;
+  color: var(--gold);
+  margin: 0;
+}
+
+.wedding-calendar__rule {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 10px 0 18px;
+  color: var(--gold-light);
+}
+
+.wedding-calendar__rule span:not(.wedding-calendar__heart) {
+  width: 60px;
+  height: 1px;
+  background: var(--gold-light);
+}
+
+.wedding-calendar__heart { font-size: 0.85rem; }
+
+.wedding-calendar__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  row-gap: 14px;
+  column-gap: 4px;
+  align-items: center;
+}
+
+.wc-weekday {
+  font-family: var(--sans);
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.wc-day {
+  position: relative;
+  font-family: var(--sans);
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.wc-day--marked {
+  color: var(--white);
+  font-weight: 700;
+}
+
+.wc-day--marked::before {
+  content: "\2764";
+  position: absolute;
+  inset: -14px;
+  z-index: -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  color: var(--gold);
+}
+
+/* PAGE OVERLAYS (Presentes / Confirmar Presença) */
+.page-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  transform: translateY(100%);
+  opacity: 0;
+  visibility: hidden;
+  transition: transform 0.45s ease, opacity 0.35s ease, visibility 0s linear 0.45s;
+}
+
+.page-overlay.is-open {
+  transform: translateY(0);
+  opacity: 1;
+  visibility: visible;
+  transition: transform 0.45s ease, opacity 0.35s ease;
+}
+
+.page-overlay__back {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 260;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  cursor: pointer;
+  background: var(--white);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  padding: 10px 18px;
+  border-radius: 30px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  transition: background 0.2s, transform 0.2s;
+}
+
+.page-overlay__back:hover {
+  background: var(--cream-dark);
+  transform: translateX(-2px);
+}
+
+.page-overlay__back--light {
+  background: rgba(255,255,255,0.1);
+  color: var(--white);
+  border: 1px solid rgba(255,255,255,0.25);
+}
+
+.page-overlay__back--light:hover {
+  background: rgba(255,255,255,0.18);
+}
+
+/* FLOATING ACTION MENU */
+.fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.fab__menu {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  opacity: 0;
+  transform: translateY(12px) scale(0.94);
+  pointer-events: none;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.fab__menu.is-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.fab__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  cursor: pointer;
+  background: var(--white);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  padding: 12px 20px 12px 16px;
+  border-radius: 30px;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.16);
+  transition: background 0.2s, transform 0.2s;
+}
+
+.fab__item:hover {
+  background: var(--cream-dark);
+  transform: translateX(-2px);
+}
+
+.fab__item-icon { font-size: 1.05rem; }
+
+.fab__toggle {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  background: var(--gold);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.fab__toggle:hover { background: #9c7847; }
+
+.fab__toggle-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 22px;
+}
+
+.fab__toggle-lines span {
+  width: 100%;
+  height: 2px;
+  background: var(--white);
+  border-radius: 2px;
+  transform-origin: center;
+  transition: transform 0.25s ease, opacity 0.2s ease;
+}
+
+.fab__toggle[aria-expanded="true"] .fab__toggle-lines span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.fab__toggle[aria-expanded="true"] .fab__toggle-lines span:nth-child(2) {
+  opacity: 0;
+}
+
+.fab__toggle[aria-expanded="true"] .fab__toggle-lines span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* GIFTS */
+.gifts { padding: 100px 0; background: var(--cream); }
+
+.gifts__intro {
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto 50px;
+  color: var(--ink-soft);
+}
+
+.gifts__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 24px;
+}
+
+.gift-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 28px 20px;
+  text-align: center;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.05);
+  border-top: 3px solid var(--gold-light);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.gift-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+}
+
+.gift-card__icon { font-size: 2rem; margin-bottom: 12px; }
+
+.gift-card h3 {
+  font-family: var(--serif);
+  font-weight: normal;
+  font-size: 1.6rem;
+  margin: 0 0 6px;
+}
+
+.gift-card__value {
+  color: var(--gold);
+  font-weight: 600;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.gift-card.is-given {
+  opacity: 0.55;
+}
+
+.gift-card.is-given .gift-card__btn {
+  background: var(--ink-soft);
+  cursor: default;
+}
+
+.gift-card__btn {
+  margin-top: auto;
+  border: none;
+  background: var(--gold);
+  color: var(--white);
+  padding: 10px 22px;
+  border-radius: 30px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: var(--sans);
+  transition: background 0.2s;
+}
+
+.gift-card__btn:hover:not(:disabled) { background: #9c7847; }
+
+/* RSVP */
+.rsvp {
+  background: linear-gradient(180deg, var(--green-deep) 0%, var(--espresso) 100%);
+  padding: 100px 0;
+}
+
+.rsvp__form {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--radius);
+  padding: 36px;
+}
+
+.form__row { margin-bottom: 20px; }
+
+.form__row label {
+  display: block;
+  color: rgba(255,255,255,0.85);
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.form__row input[type="text"],
+.form__row select,
+.form__row textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.08);
+  color: var(--white);
+  font-family: var(--sans);
+  font-size: 0.95rem;
+}
+
+.form__row textarea { resize: vertical; }
+
+.form__radios {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255,255,255,0.85);
+  font-size: 0.9rem;
+}
+
+.btn {
+  display: inline-block;
+  border: none;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  padding: 14px 32px;
+  border-radius: 30px;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.btn--primary {
+  background: var(--gold);
+  color: var(--white);
+}
+
+.btn--primary:hover {
+  background: #9c7847;
+  transform: translateY(-2px);
+}
+
+.form__feedback {
+  margin-top: 16px;
+  color: var(--gold-pale);
+  font-size: 0.9rem;
+  min-height: 20px;
+}
+
+/* FOOTER */
+.footer {
+  text-align: center;
+  padding: 60px 24px 40px;
+  background: linear-gradient(180deg, var(--espresso) 0%, var(--noir) 100%);
+  color: rgba(255,255,255,0.7);
+}
+
+.footer__names {
+  font-family: var(--serif);
+  font-size: 2.1rem;
+  font-weight: normal;
+  color: var(--white);
+  margin: 0 0 4px;
+}
+
+.footer__date { margin: 0 0 16px; font-size: 0.9rem; }
+.footer__made { font-size: 0.8rem; color: rgba(255,255,255,0.45); }
+
+/* MODAL */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 400;
+  padding: 20px;
+}
+
+.modal.is-open { display: flex; }
+
+.modal__box {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 36px;
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+  position: relative;
+}
+
+.modal__close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  border: none;
+  background: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--ink-soft);
+}
+
+.modal__box h3 {
+  font-family: var(--serif);
+  font-weight: normal;
+  font-size: 1.8rem;
+  margin: 0 0 6px;
+}
+
+.modal__value {
+  color: var(--gold);
+  font-weight: 600;
+  font-size: 1.2rem;
+  margin: 0 0 16px;
+}
+
+.modal__text {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+
+.modal__text--muted { font-style: italic; }
+
+/* RESPONSIVE */
+@media (max-width: 780px) {
+  .container { padding: 0 20px; }
+  .welcome { padding: 80px 0 60px; }
+  .countdown { padding: 70px 0; }
+  .story, .ceremony, .gifts { padding: 70px 0; }
+  .section-title { margin-bottom: 30px; }
+
+  .hero__flower--tl { width: clamp(160px, 40vw, 260px); }
+  .hero__flower--br { width: clamp(120px, 32vw, 200px); }
+
+  .ceremony__card { grid-template-columns: 1fr; }
+  .countdown__grid { grid-template-columns: repeat(2, 1fr); }
+  .story__couple { gap: 32px; }
+  .story__together { padding: 0 4px; }
+
+  .photo-placeholder--round { width: 180px; height: 180px; }
+  .photo-placeholder--wide { height: 240px; }
+
+  .wedding-calendar { max-width: 320px; }
+
+  .rsvp__form { padding: 26px 20px; }
+
+  .fab { bottom: 18px; right: 18px; }
+  .fab__toggle { width: 52px; height: 52px; }
+  .fab__item { font-size: 0.8rem; padding: 10px 16px 10px 14px; }
+
+  .page-overlay__back {
+    top: 14px;
+    left: 14px;
+    padding: 8px 14px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container { padding: 0 16px; }
+
+  .hero__date { font-size: 1.6rem; letter-spacing: 1px; }
+  .hero__eyebrow { letter-spacing: 2px; font-size: 0.75rem; }
+
+  .countdown__grid { gap: 10px; }
+  .countdown__item { padding: 16px 6px; }
+
+  .story__couple { flex-direction: column; gap: 40px; }
+  .photo-placeholder--round { width: 160px; height: 160px; }
+  .photo-placeholder--wide { height: 200px; }
+
+  .wedding-calendar { max-width: 100%; }
+  .wedding-calendar__card { padding: 24px 4px 22px; }
+  .wc-day, .wc-weekday { font-size: 0.8rem; }
+  .wc-day--marked::before { font-size: 2.4rem; }
+
+  .ceremony__detail { padding: 24px 16px; }
+  /* Opção 3: mapa já é 100% fluido (ver regra base), então não precisa
+     de override aqui. Ajuste só a altura pra ficar mais compacto no mobile.
+     (Opções 1/2, backup, usavam: .ceremony__detail--map { flex-direction: column; }
+     .ceremony__map-frame { width: 100%; max-width: 260px; height: 150px; }) */
+  .ceremony__map-frame { height: 200px; }
+
+  .gifts__grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
+  .gift-card { padding: 22px 14px; }
+
+  .rsvp__form { padding: 20px 16px; }
+  .btn { padding: 13px 26px; font-size: 0.9rem; }
+
+  .modal__box { padding: 26px 20px; }
+
+  .fab__item span:not(.fab__item-icon) { display: inline; }
+  .fab__item { font-size: 0.75rem; padding: 9px 14px 9px 12px; gap: 8px; }
+}
+
+@media (max-width: 340px) {
+  .hero__names { letter-spacing: -1px; }
+  .countdown__grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .gifts__grid { grid-template-columns: 1fr 1fr; }
+}

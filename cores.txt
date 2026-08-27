@@ -1,0 +1,2 @@
+cor principal: #66280a
+cores secundárias: #9a5833 e #7c3b1a

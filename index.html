@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ruth & Victor | Nosso Casamento</title>
+  <meta name="description" content="Site do casamento de Ruth e Victor - 5 de dezembro" />
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ENVELOPE INTRO -->
+  <div class="envelope-intro" id="envelopeIntro">
+    <div class="envelope__base"></div>
+    <div class="envelope__flap" id="envelopeFlap"></div>
+
+    <button class="envelope__seal" id="envelopeSeal" aria-label="Romper o selo e abrir o convite">
+      <img class="envelope__seal-img" src="images/selo.png" alt="" />
+    </button>
+
+    <p class="envelope-intro__hint">Toque no selo para abrir o convite</p>
+  </div>
+  <noscript>
+    <style>.envelope-intro { display: none !important; }</style>
+  </noscript>
+
+  <!-- HERO -->
+  <section class="hero" id="topo">
+    <div class="hero__overlay"></div>
+    <img class="hero__flower hero__flower--tl" src="images/flor-galho-1.png" alt="" aria-hidden="true" />
+    <img class="hero__flower hero__flower--br" src="images/flor-galho-2.png" alt="" aria-hidden="true" />
+    <div class="hero__content">
+      <p class="hero__eyebrow">Vamos nos casar</p>
+      <h1 class="hero__names">Ruth <span>&amp;</span> Victor</h1>
+      <div class="hero__divider" aria-hidden="true">
+        <svg viewBox="0 0 100 20" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0 10 Q 25 -5, 50 10 T 100 10" stroke="currentColor" fill="none" stroke-width="1"/>
+        </svg>
+      </div>
+      <p class="hero__date">05 <span>|</span> 12 <span>|</span> 2026</p>
+    </div>
+    <a href="#historia" class="hero__scroll" aria-label="Rolar para baixo">↓</a>
+  </section>
+
+  <!-- WELCOME -->
+  <section class="welcome">
+    <div class="container container--narrow">
+      <p class="section-eyebrow">Seja bem-vindo(a)</p>
+      <h2 class="section-title">Um novo capítulo começa aqui</h2>
+      <p class="welcome__text">
+        Criamos este espaço para compartilhar com vocês todos os detalhes do nosso grande dia.
+        Aqui você encontra a contagem regressiva, informações sobre a cerimônia, nossa lista de
+        presentes e o formulário para confirmar presença. Contamos com a sua companhia para
+        celebrar esse momento tão especial com a gente!
+      </p>
+    </div>
+  </section>
+
+  <!-- COUNTDOWN -->
+  <section class="countdown" id="contagem">
+    <div class="container container--narrow">
+      <p class="section-eyebrow section-eyebrow--light">Falta pouco</p>
+      <h2 class="section-title section-title--light">Contagem regressiva</h2>
+      <div class="countdown__grid" id="countdown">
+        <div class="countdown__item">
+          <span class="countdown__number" id="days">00</span>
+          <span class="countdown__label">dias</span>
+        </div>
+        <div class="countdown__item">
+          <span class="countdown__number" id="hours">00</span>
+          <span class="countdown__label">horas</span>
+        </div>
+        <div class="countdown__item">
+          <span class="countdown__number" id="minutes">00</span>
+          <span class="countdown__label">minutos</span>
+        </div>
+        <div class="countdown__item">
+          <span class="countdown__number" id="seconds">00</span>
+          <span class="countdown__label">segundos</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OUR STORY -->
+  <section class="story" id="historia">
+    <div class="container">
+      <p class="section-eyebrow">Os noivos</p>
+      <h2 class="section-title">Nossa História</h2>
+
+      <div class="story__couple">
+        <div class="story__person">
+          <div class="photo-placeholder photo-placeholder--round">
+            <span>Foto da Ruth</span>
+          </div>
+          <h3>Ruth</h3>
+          <p class="story__bio">Em breve, um pouquinho sobre a noiva vai aparecer aqui.</p>
+        </div>
+
+        <div class="story__heart" aria-hidden="true">&#10084;</div>
+
+        <div class="story__person">
+          <div class="photo-placeholder photo-placeholder--round">
+            <span>Foto do Victor</span>
+          </div>
+          <h3>Victor</h3>
+          <p class="story__bio">Em breve, um pouquinho sobre o noivo vai aparecer aqui.</p>
+        </div>
+      </div>
+
+      <div class="story__together">
+        <div class="photo-placeholder photo-placeholder--wide">
+          <span>Foto do casal</span>
+        </div>
+        <p class="story__text">
+          Aqui vai a história de como Ruth e Victor se conheceram, os momentos marcantes
+          do namoro e o caminho até o pedido de casamento. Assim que tivermos as fotos e os
+          detalhes, vamos completar este espaço com muito carinho.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CEREMONY / LOCATION -->
+  <section class="ceremony" id="cerimonia">
+    <div class="container container--narrow">
+      <p class="section-eyebrow">Onde e quando</p>
+      <h2 class="section-title">Cerimônia <span class="amp">&amp;</span> Festa</h2>
+
+      <div class="wedding-calendar">
+        <div class="wedding-calendar__card">
+          <p class="wedding-calendar__month">Dezembro 2026</p>
+          <div class="wedding-calendar__rule" aria-hidden="true"><span></span><span class="wedding-calendar__heart">&#9825;</span><span></span></div>
+          <div class="wedding-calendar__grid">
+            <span class="wc-weekday">DOM</span><span class="wc-weekday">SEG</span><span class="wc-weekday">TER</span><span class="wc-weekday">QUA</span><span class="wc-weekday">QUI</span><span class="wc-weekday">SEX</span><span class="wc-weekday">SÁB</span>
+            <span></span><span></span><span class="wc-day">1</span><span class="wc-day">2</span><span class="wc-day">3</span><span class="wc-day">4</span><span class="wc-day wc-day--marked">5</span>
+            <span class="wc-day">6</span><span class="wc-day">7</span><span class="wc-day">8</span><span class="wc-day">9</span><span class="wc-day">10</span><span class="wc-day">11</span><span class="wc-day">12</span>
+            <span class="wc-day">13</span><span class="wc-day">14</span><span class="wc-day">15</span><span class="wc-day">16</span><span class="wc-day">17</span><span class="wc-day">18</span><span class="wc-day">19</span>
+            <span class="wc-day">20</span><span class="wc-day">21</span><span class="wc-day">22</span><span class="wc-day">23</span><span class="wc-day">24</span><span class="wc-day">25</span><span class="wc-day">26</span>
+            <span class="wc-day">27</span><span class="wc-day">28</span><span class="wc-day">29</span><span class="wc-day">30</span><span class="wc-day">31</span><span></span><span></span>
+          </div>
+          <div class="wedding-calendar__rule" aria-hidden="true"><span></span><span class="wedding-calendar__heart">&#9825;</span><span></span></div>
+        </div>
+      </div>
+
+      <div class="ceremony__card">
+        <div class="ceremony__detail">
+          <span class="ceremony__icon">📅</span>
+          <h3>Data</h3>
+          <p>Sábado, 5 de dezembro de 2026<br />às 16h30</p>
+        </div>
+        <div class="ceremony__detail">
+          <span class="ceremony__icon">📍</span>
+          <h3>Local</h3>
+          <p>Brejo do Arroz 2 (próx. à Irrigação)<br />Sítio DKF</p>
+        </div>
+        <div class="ceremony__detail">
+          <span class="ceremony__icon">👗</span>
+          <h3>Traje</h3>
+          <p>Esporte fino / a definir</p>
+        </div>
+      </div>
+
+      <!-- OPÇÃO 3 (ativa): mapa fora dos 3 blocos, abaixo do card. -->
+      <div class="ceremony__map">
+        <iframe
+          class="ceremony__map-frame"
+          src="https://www.google.com/maps?q=-10.984992027282715,-38.76611328125&z=17&hl=pt-BR&output=embed"
+          title="Localização da cerimônia no Google Maps"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+        ></iframe>
+        <a
+          class="ceremony__map-link"
+          href="https://www.google.com/maps?q=-10.984992027282715,-38.76611328125&z=17&hl=pt-BR"
+          target="_blank"
+          rel="noopener noreferrer"
+        >Abrir no Google Maps ↗</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- GIFTS -->
+  <section class="gifts page-overlay" id="presentes">
+    <button class="page-overlay__back" data-close-page="presentes">&larr; Voltar ao convite</button>
+    <div class="container">
+      <p class="section-eyebrow">Com carinho</p>
+      <h2 class="section-title">Lista de Presentes</h2>
+      <p class="gifts__intro">
+        A nossa lista de presentes ainda está sendo montada com muito carinho. Enquanto isso,
+        preparamos algumas cotas simbólicas no valor de <strong>R$ 100,00</strong> — cada uma
+        representa um jeito diferente de nos ajudar a começar essa nova fase. Escolha a que mais
+        combina com você!
+      </p>
+
+      <div class="gifts__grid" id="giftsGrid"></div>
+    </div>
+  </section>
+
+  <!-- RSVP -->
+  <section class="rsvp page-overlay" id="confirmar">
+    <button class="page-overlay__back page-overlay__back--light" data-close-page="confirmar">&larr; Voltar ao convite</button>
+    <div class="container container--narrow">
+      <p class="section-eyebrow section-eyebrow--light">Sua presença é o nosso presente</p>
+      <h2 class="section-title section-title--light">Confirme sua presença</h2>
+
+      <form class="rsvp__form" id="rsvpForm">
+        <div class="form__row">
+          <label for="nome">Nome completo</label>
+          <input type="text" id="nome" name="nome" required placeholder="Seu nome" />
+        </div>
+
+        <div class="form__row">
+          <label for="convidados">Número de acompanhantes</label>
+          <select id="convidados" name="convidados">
+            <option value="0">Vou sozinho(a)</option>
+            <option value="1">+1 acompanhante</option>
+            <option value="2">+2 acompanhantes</option>
+            <option value="3">+3 acompanhantes</option>
+          </select>
+        </div>
+
+        <div class="form__row">
+          <label>Você vai comparecer?</label>
+          <div class="form__radios">
+            <label class="radio"><input type="radio" name="presenca" value="sim" checked /> Sim, estarei lá!</label>
+            <label class="radio"><input type="radio" name="presenca" value="nao" /> Infelizmente não poderei ir</label>
+          </div>
+        </div>
+
+        <div class="form__row">
+          <label for="mensagem">Deixe uma mensagem para os noivos (opcional)</label>
+          <textarea id="mensagem" name="mensagem" rows="4" placeholder="Escreva aqui..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn--primary">Enviar confirmação</button>
+        <p class="form__feedback" id="formFeedback"></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <p class="footer__names">Ruth <span class="amp">&amp;</span> Victor</p>
+    <p class="footer__date">5 de dezembro de 2026</p>
+    <p class="footer__made">Feito com &#10084; para celebrar esse dia</p>
+  </footer>
+
+  <!-- GIFT MODAL -->
+  <div class="modal" id="giftModal">
+    <div class="modal__box">
+      <button class="modal__close" id="modalClose" aria-label="Fechar">&times;</button>
+      <h3 id="modalGiftTitle">Cota Presente</h3>
+      <p class="modal__value">R$ 100,00</p>
+      <p class="modal__text">
+        A chave PIX para presentear ainda será divulgada. Assim que estiver disponível,
+        vamos atualizar esta página. Obrigado pelo carinho! 💛
+      </p>
+      <p class="modal__text modal__text--muted">Chave PIX: <em>a definir</em></p>
+      <button class="btn btn--primary" id="modalMarkGiven">Já presenteei essa cota</button>
+    </div>
+  </div>
+
+  <!-- FLOATING MENU -->
+  <div class="fab" id="fab">
+    <div class="fab__menu" id="fabMenu">
+      <button class="fab__item" data-open-page="presentes">
+        <span class="fab__item-icon">🎁</span> Lista de Presentes
+      </button>
+      <button class="fab__item" data-open-page="confirmar">
+        <span class="fab__item-icon">💌</span> Confirmar Presença
+      </button>
+    </div>
+    <button class="fab__toggle" id="fabToggle" aria-label="Abrir menu" aria-expanded="false">
+      <span class="fab__toggle-lines"><span></span><span></span><span></span></span>
+    </button>
+  </div>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
