@@ -1,33 +1,19 @@
+// `auth` e `db` vêm de js/firebase-init.js (carregado antes deste arquivo
+// em index.html). Usamos o SDK "compat" do Firebase (scripts clássicos)
+// em vez do modular, para o site continuar abrindo direto com duplo
+// clique no index.html — módulos ES são bloqueados pelo navegador quando
+// carregados de um arquivo local (file://).
+
 // ------------------------------------------------------------------
 // CONFIG
 // ------------------------------------------------------------------
 const WEDDING_DATE = new Date('2026-12-05T16:30:00');
-
-// Cole aqui o endpoint do Formspree (https://formspree.io) para receber
-// as confirmações de presença por e-mail. Enquanto estiver vazio, as
-// respostas ficam salvas apenas no navegador (localStorage).
-const FORMSPREE_ENDPOINT = '';
 
 // Duração total da animação do envelope: primeiro o selo some por
 // completo, só depois o envelope (aba + fundo) começa a desaparecer.
 // Em ms — precisa bater com os "delay + duration" das transições em
 // style.css (bloco "ENVELOPE INTRO").
 const ENVELOPE_ANIMATION_MS = 1700;
-
-const GIFTS = [
-  { icon: '🌙', name: 'Cota Lua de Mel' },
-  { icon: '🏠', name: 'Cota Casa Nova' },
-  { icon: '🍽️', name: 'Cota Enxoval de Cozinha' },
-  { icon: '🛋️', name: 'Cota Decoração' },
-  { icon: '🛏️', name: 'Cota Enxoval de Cama' },
-  { icon: '🧺', name: 'Cota Área de Serviço' },
-  { icon: '🍷', name: 'Cota Jantar a Dois' },
-  { icon: '🌿', name: 'Cota Jardim' },
-  { icon: '📺', name: 'Cota Sala de Estar' },
-  { icon: '🧳', name: 'Cota Viagem' },
-  { icon: '☕', name: 'Cota Café da Manhã' },
-  { icon: '🎁', name: 'Cota Livre' },
-];
 
 // ------------------------------------------------------------------
 // ENVELOPE INTRO (selo some ao clicar, a aba abre pra cima e o envelope
@@ -153,11 +139,12 @@ updateCountdown();
 setInterval(updateCountdown, 1000);
 
 // ------------------------------------------------------------------
-// MENU FLUTUANTE (FAB) + PÁGINAS EM ABA (Presentes / Confirmar Presença)
+// MENU FLUTUANTE (FAB) + PÁGINAS EM ABA (Presentes / Confirmar Presença / Painel)
 // ------------------------------------------------------------------
 const fab = document.getElementById('fab');
 const fabToggle = document.getElementById('fabToggle');
 const fabMenu = document.getElementById('fabMenu');
+const fabAdminItem = document.getElementById('fabAdminItem');
 const pageOverlays = document.querySelectorAll('.page-overlay');
 
 function toggleFabMenu(forceOpen) {
@@ -202,62 +189,146 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     pageOverlays.forEach((p) => closePage(p.id));
     toggleFabMenu(false);
+    closeGiftModal();
+    closeLoginModal();
   }
 });
 
 // ------------------------------------------------------------------
-// GIFTS
+// LOGIN DA NOIVA (Firebase Authentication — só login, sem cadastro)
+// ------------------------------------------------------------------
+const loginModal = document.getElementById('loginModal');
+const loginModalClose = document.getElementById('loginModalClose');
+const loginForm = document.getElementById('loginForm');
+const loginFeedback = document.getElementById('loginFeedback');
+const footerLoginBtn = document.getElementById('footerLoginBtn');
+
+function openLoginModal() {
+  loginFeedback.textContent = '';
+  loginModal.classList.add('is-open');
+}
+
+function closeLoginModal() {
+  loginModal.classList.remove('is-open');
+  loginForm.reset();
+}
+
+footerLoginBtn.addEventListener('click', () => {
+  if (auth.currentUser) {
+    auth.signOut();
+  } else {
+    openLoginModal();
+  }
+});
+
+loginModalClose.addEventListener('click', closeLoginModal);
+loginModal.addEventListener('click', (e) => {
+  if (e.target === loginModal) closeLoginModal();
+});
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+
+  try {
+    await auth.signInWithEmailAndPassword(email, password);
+    closeLoginModal();
+  } catch (err) {
+    loginFeedback.textContent = 'E-mail ou senha inválidos.';
+    wrapUppercaseS(loginFeedback);
+  }
+});
+
+// Liga/desliga a interface da noiva conforme o estado de autenticação.
+auth.onAuthStateChanged((user) => {
+  footerLoginBtn.textContent = user ? 'Sair' : 'Acesso da noiva';
+  fabAdminItem.classList.toggle('is-hidden', !user);
+
+  if (!user && document.getElementById('painel').classList.contains('is-open')) {
+    closePage('painel');
+  }
+
+  if (user) {
+    startAdminListeners();
+  } else {
+    stopAdminListeners();
+  }
+});
+
+// ------------------------------------------------------------------
+// GIFTS (lista de presentes pública — Firestore em tempo real)
 // ------------------------------------------------------------------
 const giftsGrid = document.getElementById('giftsGrid');
-const givenGifts = JSON.parse(localStorage.getItem('givenGifts') || '[]');
+const giftsEmpty = document.getElementById('giftsEmpty');
+const giftsCollection = db.collection('gifts');
 
-function renderGifts() {
+const availableGiftsQuery = giftsCollection.where('claimedBy', '==', null);
+
+availableGiftsQuery.onSnapshot((snapshot) => {
   giftsGrid.innerHTML = '';
-  GIFTS.forEach((gift, index) => {
-    const isGiven = givenGifts.includes(index);
+
+  if (snapshot.empty) {
+    giftsEmpty.classList.remove('is-hidden');
+  } else {
+    giftsEmpty.classList.add('is-hidden');
+  }
+
+  snapshot.forEach((docSnap) => {
+    const gift = docSnap.data();
     const card = document.createElement('div');
-    card.className = 'gift-card' + (isGiven ? ' is-given' : '');
+    card.className = 'gift-card';
     card.innerHTML = `
-      <div class="gift-card__icon">${gift.icon}</div>
-      <h3>${gift.name}</h3>
-      <p class="gift-card__value">R$ 100,00</p>
-      <button class="gift-card__btn" data-index="${index}" ${isGiven ? 'disabled' : ''}>
-        ${isGiven ? 'Presenteado ✓' : 'Presentear'}
-      </button>
+      <div class="gift-card__icon">🎁</div>
+      <h3>${escapeHtml(gift.name)}</h3>
+      ${gift.description ? `<p class="gift-card__description">${escapeHtml(gift.description)}</p>` : ''}
+      <button class="gift-card__btn" data-id="${docSnap.id}">Escolher esse presente</button>
     `;
     wrapUppercaseS(card);
     giftsGrid.appendChild(card);
   });
-}
-
-renderGifts();
+}, (err) => {
+  console.error('Não foi possível carregar a lista de presentes.', err);
+});
 
 giftsGrid.addEventListener('click', (e) => {
   const btn = e.target.closest('.gift-card__btn');
-  if (!btn || btn.disabled) return;
-  const index = Number(btn.dataset.index);
-  openGiftModal(index);
+  if (!btn) return;
+  const title = btn.closest('.gift-card').querySelector('h3').textContent;
+  const description = btn.closest('.gift-card').querySelector('.gift-card__description');
+  openGiftModal(btn.dataset.id, title, description ? description.textContent : '');
 });
 
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
+}
+
 // ------------------------------------------------------------------
-// GIFT MODAL
+// GIFT MODAL (convidado escolhe um presente informando o nome completo)
 // ------------------------------------------------------------------
 const giftModal = document.getElementById('giftModal');
 const modalClose = document.getElementById('modalClose');
 const modalGiftTitle = document.getElementById('modalGiftTitle');
-const modalMarkGiven = document.getElementById('modalMarkGiven');
-let currentGiftIndex = null;
+const modalGiftDescription = document.getElementById('modalGiftDescription');
+const giftClaimForm = document.getElementById('giftClaimForm');
+const giftClaimFeedback = document.getElementById('giftClaimFeedback');
+let currentGiftId = null;
 
-function openGiftModal(index) {
-  currentGiftIndex = index;
-  modalGiftTitle.textContent = GIFTS[index].name;
+function openGiftModal(giftId, title, description) {
+  currentGiftId = giftId;
+  modalGiftTitle.textContent = title;
+  modalGiftDescription.textContent = description || '';
+  giftClaimFeedback.textContent = '';
+  giftClaimForm.reset();
   wrapUppercaseS(modalGiftTitle);
   giftModal.classList.add('is-open');
 }
 
 function closeGiftModal() {
   giftModal.classList.remove('is-open');
-  currentGiftIndex = null;
+  currentGiftId = null;
 }
 
 modalClose.addEventListener('click', closeGiftModal);
@@ -265,18 +336,69 @@ giftModal.addEventListener('click', (e) => {
   if (e.target === giftModal) closeGiftModal();
 });
 
-modalMarkGiven.addEventListener('click', () => {
-  if (currentGiftIndex === null) return;
-  if (!givenGifts.includes(currentGiftIndex)) {
-    givenGifts.push(currentGiftIndex);
-    localStorage.setItem('givenGifts', JSON.stringify(givenGifts));
-    renderGifts();
+giftClaimForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!currentGiftId) return;
+
+  const fullName = document.getElementById('giftClaimName').value.trim();
+  if (!fullName) return;
+
+  try {
+    await claimGift(currentGiftId, fullName);
+    closeGiftModal();
+  } catch (err) {
+    if (err.message === 'already-claimed') {
+      giftClaimFeedback.textContent = 'Ops! Esse presente acabou de ser escolhido por outra pessoa. Escolha outro na lista.';
+    } else {
+      giftClaimFeedback.textContent = 'Não foi possível confirmar agora. Tente novamente em instantes.';
+    }
+    wrapUppercaseS(giftClaimFeedback);
   }
-  closeGiftModal();
+});
+
+async function claimGift(giftId, fullName) {
+  const giftRef = giftsCollection.doc(giftId);
+  await db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(giftRef);
+    if (!snap.exists || snap.data().claimedBy) {
+      throw new Error('already-claimed');
+    }
+    transaction.update(giftRef, {
+      claimedBy: fullName,
+      claimedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+  });
+}
+
+// ------------------------------------------------------------------
+// CONVIDADOS (lista pública, só para preencher o seletor de nome do RSVP —
+// impede quem não foi convidado de confirmar presença)
+// ------------------------------------------------------------------
+const guestsCollection = db.collection('guests');
+const guestSelect = document.getElementById('nome');
+const guestsEmptyHint = document.getElementById('guestsEmptyHint');
+const guestNamePlaceholder = guestSelect.querySelector('option');
+
+guestsCollection.orderBy('name').onSnapshot((snapshot) => {
+  guestSelect.querySelectorAll('option:not(:first-child)').forEach((opt) => opt.remove());
+
+  snapshot.forEach((docSnap) => {
+    const option = document.createElement('option');
+    option.value = docSnap.id;
+    option.textContent = docSnap.data().name;
+    guestSelect.appendChild(option);
+  });
+
+  const isEmpty = snapshot.empty;
+  guestsEmptyHint.classList.toggle('is-hidden', !isEmpty);
+  guestSelect.disabled = isEmpty;
+  guestNamePlaceholder.textContent = isEmpty ? 'Nenhum convidado cadastrado' : 'Selecione seu nome na lista';
+}, (err) => {
+  console.error('Não foi possível carregar a lista de convidados.', err);
 });
 
 // ------------------------------------------------------------------
-// RSVP FORM
+// RSVP FORM (grava direto no Firestore — visível só no painel da noiva)
 // ------------------------------------------------------------------
 const rsvpForm = document.getElementById('rsvpForm');
 const formFeedback = document.getElementById('formFeedback');
@@ -284,33 +406,32 @@ const formFeedback = document.getElementById('formFeedback');
 rsvpForm.addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  const formData = new FormData(rsvpForm);
-  const payload = Object.fromEntries(formData.entries());
-  payload.data = new Date().toISOString();
+  const guestId = guestSelect.value;
+  const guestName = guestSelect.selectedOptions[0] ? guestSelect.selectedOptions[0].textContent : '';
+  if (!guestId) return;
 
-  if (FORMSPREE_ENDPOINT) {
-    try {
-      const res = await fetch(FORMSPREE_ENDPOINT, {
-        method: 'POST',
-        headers: { Accept: 'application/json' },
-        body: formData,
-      });
-      if (!res.ok) throw new Error('Falha no envio');
-      showFeedback('Presença confirmada! Obrigado por avisar. 💛');
-      rsvpForm.reset();
-      return;
-    } catch (err) {
+  const convidados = document.getElementById('convidados').value;
+  const presenca = rsvpForm.querySelector('input[name="presenca"]:checked').value;
+  const mensagem = document.getElementById('mensagem').value.trim();
+
+  try {
+    await db.collection('rsvps').add({
+      guestId,
+      nome: guestName,
+      convidados,
+      presenca,
+      mensagem,
+      criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    showFeedback('Presença confirmada! Obrigado por avisar. 💛');
+    rsvpForm.reset();
+  } catch (err) {
+    if (err.code === 'permission-denied') {
+      showFeedback('Seu nome não foi encontrado na lista de convidados. Fale com os noivos.');
+    } else {
       showFeedback('Não foi possível enviar agora. Tente novamente em instantes.');
-      return;
     }
   }
-
-  // Fallback: guarda localmente enquanto o Formspree não é configurado
-  const confirmations = JSON.parse(localStorage.getItem('rsvpConfirmations') || '[]');
-  confirmations.push(payload);
-  localStorage.setItem('rsvpConfirmations', JSON.stringify(confirmations));
-  showFeedback('Presença confirmada! Obrigado por avisar. 💛');
-  rsvpForm.reset();
 });
 
 function showFeedback(message) {
@@ -318,6 +439,178 @@ function showFeedback(message) {
   wrapUppercaseS(formFeedback);
   setTimeout(() => (formFeedback.textContent = ''), 6000);
 }
+
+// ------------------------------------------------------------------
+// PAINEL DA NOIVA (só ativo enquanto autenticada)
+// ------------------------------------------------------------------
+const adminGuestsList = document.getElementById('adminGuestsList');
+const adminGuestsEmpty = document.getElementById('adminGuestsEmpty');
+const adminGuestForm = document.getElementById('adminGuestForm');
+const adminGuestFeedback = document.getElementById('adminGuestFeedback');
+const adminRsvpsList = document.getElementById('adminRsvpsList');
+const adminRsvpsEmpty = document.getElementById('adminRsvpsEmpty');
+const adminGiftsList = document.getElementById('adminGiftsList');
+const adminGiftsEmpty = document.getElementById('adminGiftsEmpty');
+const adminGiftForm = document.getElementById('adminGiftForm');
+const adminGiftFeedback = document.getElementById('adminGiftFeedback');
+
+let unsubscribeAdminGuests = null;
+let unsubscribeRsvps = null;
+let unsubscribeAdminGifts = null;
+
+const PRESENCA_LABELS = { sim: 'Vai comparecer', nao: 'Não vai comparecer' };
+
+// Abas do painel (Convidados / Confirmações / Presentes)
+const adminTabs = document.querySelectorAll('.admin__tab');
+const adminPanels = document.querySelectorAll('[data-panel]');
+
+adminTabs.forEach((tab) => {
+  tab.addEventListener('click', () => {
+    adminTabs.forEach((t) => t.classList.toggle('is-active', t === tab));
+    adminPanels.forEach((panel) => panel.classList.toggle('is-hidden', panel.dataset.panel !== tab.dataset.tab));
+  });
+});
+
+function startAdminListeners() {
+  if (unsubscribeRsvps || unsubscribeAdminGifts || unsubscribeAdminGuests) return; // já estão rodando
+
+  unsubscribeAdminGuests = guestsCollection.orderBy('name').onSnapshot(
+    (snapshot) => {
+      adminGuestsList.innerHTML = '';
+      adminGuestsEmpty.classList.toggle('is-hidden', !snapshot.empty);
+
+      snapshot.forEach((docSnap) => {
+        const guest = docSnap.data();
+        const item = document.createElement('div');
+        item.className = 'admin__item';
+        item.innerHTML = `
+          <p class="admin__item-title">${escapeHtml(guest.name)}</p>
+          <button class="admin__item-delete" data-id="${docSnap.id}">Excluir</button>
+        `;
+        adminGuestsList.appendChild(item);
+      });
+      wrapUppercaseS(adminGuestsList);
+    },
+    (err) => console.error('Não foi possível carregar a lista de convidados.', err)
+  );
+
+  unsubscribeRsvps = db.collection('rsvps').orderBy('criadoEm', 'desc').onSnapshot(
+    (snapshot) => {
+      adminRsvpsList.innerHTML = '';
+      adminRsvpsEmpty.classList.toggle('is-hidden', !snapshot.empty);
+
+      snapshot.forEach((docSnap) => {
+        const rsvp = docSnap.data();
+        const item = document.createElement('div');
+        item.className = 'admin__item';
+        item.innerHTML = `
+          <p class="admin__item-title">${escapeHtml(rsvp.nome || '(sem nome)')}</p>
+          <p class="admin__item-meta">${PRESENCA_LABELS[rsvp.presenca] || rsvp.presenca} · ${escapeHtml(String(rsvp.convidados ?? '0'))} acompanhante(s)</p>
+          ${rsvp.mensagem ? `<p class="admin__item-message">"${escapeHtml(rsvp.mensagem)}"</p>` : ''}
+        `;
+        adminRsvpsList.appendChild(item);
+      });
+      wrapUppercaseS(adminRsvpsList);
+    },
+    (err) => console.error('Não foi possível carregar as confirmações.', err)
+  );
+
+  unsubscribeAdminGifts = giftsCollection.orderBy('createdAt', 'desc').onSnapshot(
+    (snapshot) => {
+      adminGiftsList.innerHTML = '';
+      adminGiftsEmpty.classList.toggle('is-hidden', !snapshot.empty);
+
+      snapshot.forEach((docSnap) => {
+        const gift = docSnap.data();
+        const item = document.createElement('div');
+        item.className = 'admin__item';
+        item.innerHTML = `
+          <p class="admin__item-title">${escapeHtml(gift.name)}</p>
+          <p class="admin__item-meta">${gift.claimedBy ? `Escolhido por <strong>${escapeHtml(gift.claimedBy)}</strong>` : 'Disponível'}</p>
+          <button class="admin__item-delete" data-id="${docSnap.id}">Excluir</button>
+        `;
+        adminGiftsList.appendChild(item);
+      });
+      wrapUppercaseS(adminGiftsList);
+    },
+    (err) => console.error('Não foi possível carregar os presentes.', err)
+  );
+}
+
+function stopAdminListeners() {
+  if (unsubscribeAdminGuests) unsubscribeAdminGuests();
+  if (unsubscribeRsvps) unsubscribeRsvps();
+  if (unsubscribeAdminGifts) unsubscribeAdminGifts();
+  unsubscribeAdminGuests = null;
+  unsubscribeRsvps = null;
+  unsubscribeAdminGifts = null;
+  adminGuestsList.innerHTML = '';
+  adminRsvpsList.innerHTML = '';
+  adminGiftsList.innerHTML = '';
+}
+
+adminGuestForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const namesInput = document.getElementById('adminGuestNames');
+  const names = namesInput.value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (names.length === 0) return;
+
+  try {
+    const batch = db.batch();
+    names.forEach((name) => {
+      const ref = guestsCollection.doc();
+      batch.set(ref, { name, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    });
+    await batch.commit();
+    namesInput.value = '';
+    adminGuestFeedback.textContent = names.length === 1
+      ? 'Convidado adicionado à lista!'
+      : `${names.length} convidados adicionados à lista!`;
+  } catch (err) {
+    adminGuestFeedback.textContent = 'Não foi possível adicionar agora. Tente novamente.';
+  }
+  wrapUppercaseS(adminGuestFeedback);
+  setTimeout(() => (adminGuestFeedback.textContent = ''), 4000);
+});
+
+adminGuestsList.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.admin__item-delete');
+  if (!btn) return;
+  await guestsCollection.doc(btn.dataset.id).delete();
+});
+
+adminGiftForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('adminGiftName').value.trim();
+  const description = document.getElementById('adminGiftDescription').value.trim();
+  if (!name) return;
+
+  try {
+    await giftsCollection.add({
+      name,
+      description: description || null,
+      claimedBy: null,
+      claimedAt: null,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    adminGiftForm.reset();
+    adminGiftFeedback.textContent = 'Presente adicionado à lista!';
+  } catch (err) {
+    adminGiftFeedback.textContent = 'Não foi possível adicionar agora. Tente novamente.';
+  }
+  wrapUppercaseS(adminGiftFeedback);
+  setTimeout(() => (adminGiftFeedback.textContent = ''), 4000);
+});
+
+adminGiftsList.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.admin__item-delete');
+  if (!btn) return;
+  await giftsCollection.doc(btn.dataset.id).delete();
+});
 
 // ------------------------------------------------------------------
 // Varre a página inteira; a própria função filtra e só troca o "S"

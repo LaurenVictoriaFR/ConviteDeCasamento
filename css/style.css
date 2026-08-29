@@ -485,41 +485,22 @@ img { max-width: 100%; display: block; }
   overflow: hidden;
 }
 
-/* Mapa do Google — OPÇÃO 3 (ativa): fora dos 3 blocos (Data/Local/Traje),
-   que agora ficam todos do mesmo tamanho, proporcional ao próprio texto.
-   O mapa aparece abaixo do card, ocupando a largura do container.
-   IMPORTANTE: diferente da troca entre opção 1 e 2 (só CSS), voltar para
-   a opção 1 ou 2 exige também mexer no HTML — o iframe/link precisam
-   voltar para dentro do card do meio (".ceremony__detail"), com os
-   wrappers ".ceremony__detail-info" / ".ceremony__detail-embed"; ver
-   detalhes salvos na memória do projeto (ceremony-location-block-layout). */
-.ceremony__map {
-  margin-top: 32px;
-  text-align: center;
-}
-
-/* ============================================================
-   OPÇÕES 1 e 2 (backup, precisam do HTML antigo do card do meio) —
-   endereço e mapa dentro do mesmo bloco ".ceremony__detail--map":
-   opção 1 lado a lado, opção 2 empilhado. Para voltar: restaure o
-   HTML (iframe/link dentro do card "Local") e descomente o CSS abaixo.
-
+/* Mapa do Google — OPÇÃO 2 (ativa): endereço em cima, mapa embaixo,
+   empilhados dentro do mesmo card "Local" (".ceremony__detail--map").
+   Backups (opções 1 e 3) documentados na memória do projeto
+   (ceremony-location-block-layout) — opção 1 é igual à 2 mas lado a
+   lado (troque só o flex-direction abaixo); opção 3 tira o mapa do
+   card e o coloca solto abaixo dos 3 blocos. */
 .ceremony__detail--map {
   display: flex;
-  flex-direction: column;   // opção 2: empilhado
-  // ou, para opção 1 (lado a lado): remova a linha flex-direction acima
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 14px;
 }
 
-.ceremony__detail-info { text-align: center; }   // opção 2
-// opção 1: .ceremony__detail-info { flex: 1 1 auto; min-width: 0; text-align: center; }
-
-.ceremony__detail-embed { text-align: center; }   // opção 2
-// opção 1: .ceremony__detail-embed { flex: 0 0 auto; text-align: center; }
-
-   ============================================================ */
+.ceremony__detail-info { text-align: center; }
+.ceremony__detail-embed { text-align: center; }
 
 .ceremony__icon {
   font-size: 1.8rem;
@@ -541,11 +522,12 @@ img { max-width: 100%; display: block; }
 }
 
 .ceremony__map-frame {
-  /* Opção 3: mapa fora do card, então pode ocupar mais espaço.
-     Opções 1/2 (backup) usavam width: 120px; height: 100px;. */
+  /* Opção 2: mapa dentro do card "Local", tamanho contido.
+     Opção 3 (backup, mapa solto fora do card) usava width: 100%;
+     max-width: 560px; height: 260px;. */
   width: 100%;
-  max-width: 560px;
-  height: 260px;
+  max-width: 220px;
+  height: 140px;
   border: 0;
   border-radius: var(--radius);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
@@ -842,20 +824,16 @@ img { max-width: 100%; display: block; }
   margin: 0 0 6px;
 }
 
-.gift-card__value {
-  color: var(--gold);
-  font-weight: 600;
+.gift-card__description {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
   margin-bottom: 16px;
-  width: 100%;
 }
 
-.gift-card.is-given {
-  opacity: 0.55;
-}
-
-.gift-card.is-given .gift-card__btn {
-  background: var(--ink-soft);
-  cursor: default;
+.gifts__empty {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
 }
 
 .gift-card__btn {
@@ -896,6 +874,8 @@ img { max-width: 100%; display: block; }
 }
 
 .form__row input[type="text"],
+.form__row input[type="email"],
+.form__row input[type="password"],
 .form__row select,
 .form__row textarea {
   width: 100%;
@@ -909,6 +889,12 @@ img { max-width: 100%; display: block; }
 }
 
 .form__row textarea { resize: vertical; }
+
+.form__hint {
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.6);
+}
 
 .form__radios {
   display: flex;
@@ -971,6 +957,135 @@ img { max-width: 100%; display: block; }
 .footer__date { margin: 0 0 16px; font-size: 0.9rem; }
 .footer__made { font-size: 0.8rem; color: rgba(255,255,255,0.45); }
 
+.footer__login-link {
+  display: inline-block;
+  margin-top: 18px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.35);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.footer__login-link:hover { color: rgba(255,255,255,0.6); }
+
+/* ÁREA DA NOIVA */
+.admin { padding: 100px 0; background: var(--cream); }
+
+.admin__tabs {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 44px;
+}
+
+.admin__tab {
+  border: none;
+  cursor: pointer;
+  background: var(--white);
+  color: var(--ink-soft);
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  padding: 10px 24px;
+  border-radius: 30px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  transition: background 0.2s, color 0.2s;
+}
+
+.admin__tab:hover { background: var(--cream-dark); }
+
+.admin__tab.is-active {
+  background: var(--gold);
+  color: var(--white);
+}
+
+.admin__block { max-width: 640px; margin: 0 auto 60px; }
+
+.admin__block-title {
+  font-family: var(--serif);
+  font-weight: normal;
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.admin__block-hint {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  margin: -12px 0 20px;
+}
+
+.admin__gift-form.rsvp__form {
+  background: var(--white);
+  border: 1px solid var(--cream-dark);
+  margin-bottom: 28px;
+}
+
+.admin__gift-form .form__row label,
+.admin__gift-form .radio { color: var(--ink-soft); }
+
+.admin__gift-form input[type="text"],
+.admin__gift-form textarea {
+  background: var(--cream);
+  border: 1px solid var(--cream-dark);
+  color: var(--ink);
+}
+
+.admin__gift-form .form__feedback { color: var(--gold); }
+
+.admin__empty {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.admin__list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.admin__item {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+}
+
+.admin__item-title {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  margin: 0 0 4px;
+}
+
+.admin__item-meta { font-size: 0.85rem; color: var(--ink-soft); margin: 0; }
+
+.admin__item-message {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--ink-soft);
+  margin: 8px 0 0;
+}
+
+.admin__item-delete {
+  margin-top: 10px;
+  border: none;
+  background: none;
+  color: #b04a4a;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+/* UTILITY */
+.is-hidden { display: none !important; }
+
 /* MODAL */
 .modal {
   position: fixed;
@@ -1028,12 +1143,34 @@ img { max-width: 100%; display: block; }
 
 .modal__text--muted { font-style: italic; }
 
+.modal .rsvp__form {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: 8px;
+  text-align: left;
+}
+
+.modal .form__row label { color: var(--ink-soft); }
+
+.modal .form__row input[type="text"],
+.modal .form__row input[type="email"],
+.modal .form__row input[type="password"] {
+  background: var(--cream);
+  border: 1px solid var(--cream-dark);
+  color: var(--ink);
+}
+
+.modal .form__feedback { color: #b04a4a; }
+
+.modal .btn--primary { width: 100%; }
+
 /* RESPONSIVE */
 @media (max-width: 780px) {
   .container { padding: 0 20px; }
   .welcome { padding: 80px 0 60px; }
   .countdown { padding: 70px 0; }
-  .story, .ceremony, .gifts { padding: 70px 0; }
+  .story, .ceremony, .gifts, .admin { padding: 70px 0; }
   .section-title { margin-bottom: 30px; }
 
   .hero__flower--tl { width: clamp(160px, 40vw, 260px); }
@@ -1082,11 +1219,10 @@ img { max-width: 100%; display: block; }
   .wc-day--marked::before { font-size: 2.4rem; }
 
   .ceremony__detail { padding: 24px 16px; }
-  /* Opção 3: mapa já é 100% fluido (ver regra base), então não precisa
-     de override aqui. Ajuste só a altura pra ficar mais compacto no mobile.
-     (Opções 1/2, backup, usavam: .ceremony__detail--map { flex-direction: column; }
-     .ceremony__map-frame { width: 100%; max-width: 260px; height: 150px; }) */
-  .ceremony__map-frame { height: 200px; }
+  /* Opção 2: os cards viram 1 coluna (ver regra base do .ceremony__card),
+     então o card "Local" fica com bastante largura sobrando — deixa o
+     mapa um pouco maior nesse caso. */
+  .ceremony__map-frame { max-width: 260px; height: 150px; }
 
   .gifts__grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
   .gift-card { padding: 22px 14px; }

@@ -150,33 +150,35 @@
           <h3>Data</h3>
           <p>Sábado, 5 de dezembro de 2026<br />às 16h30</p>
         </div>
-        <div class="ceremony__detail">
-          <span class="ceremony__icon">📍</span>
-          <h3>Local</h3>
-          <p>Brejo do Arroz 2 (próx. à Irrigação)<br />Sítio DKF</p>
+        <!-- OPÇÃO 2 (ativa): endereço em cima, mapa embaixo, empilhados
+             dentro do mesmo card "Local". -->
+        <div class="ceremony__detail ceremony__detail--map">
+          <div class="ceremony__detail-info">
+            <span class="ceremony__icon">📍</span>
+            <h3>Local</h3>
+            <p>Brejo do Arroz 2 (próx. à Irrigação)<br />Sítio DKF</p>
+          </div>
+          <div class="ceremony__detail-embed">
+            <iframe
+              class="ceremony__map-frame"
+              src="https://www.google.com/maps?q=-10.984992027282715,-38.76611328125&z=17&hl=pt-BR&output=embed"
+              title="Localização da cerimônia no Google Maps"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+            ></iframe>
+            <a
+              class="ceremony__map-link"
+              href="https://www.google.com/maps?q=-10.984992027282715,-38.76611328125&z=17&hl=pt-BR"
+              target="_blank"
+              rel="noopener noreferrer"
+            >Abrir no Google Maps ↗</a>
+          </div>
         </div>
         <div class="ceremony__detail">
           <span class="ceremony__icon">👗</span>
           <h3>Traje</h3>
           <p>Esporte fino / a definir</p>
         </div>
-      </div>
-
-      <!-- OPÇÃO 3 (ativa): mapa fora dos 3 blocos, abaixo do card. -->
-      <div class="ceremony__map">
-        <iframe
-          class="ceremony__map-frame"
-          src="https://www.google.com/maps?q=-10.984992027282715,-38.76611328125&z=17&hl=pt-BR&output=embed"
-          title="Localização da cerimônia no Google Maps"
-          loading="lazy"
-          referrerpolicy="no-referrer-when-downgrade"
-        ></iframe>
-        <a
-          class="ceremony__map-link"
-          href="https://www.google.com/maps?q=-10.984992027282715,-38.76611328125&z=17&hl=pt-BR"
-          target="_blank"
-          rel="noopener noreferrer"
-        >Abrir no Google Maps ↗</a>
       </div>
     </div>
   </section>
@@ -188,13 +190,12 @@
       <p class="section-eyebrow">Com carinho</p>
       <h2 class="section-title">Lista de Presentes</h2>
       <p class="gifts__intro">
-        A nossa lista de presentes ainda está sendo montada com muito carinho. Enquanto isso,
-        preparamos algumas cotas simbólicas no valor de <strong>R$ 100,00</strong> — cada uma
-        representa um jeito diferente de nos ajudar a começar essa nova fase. Escolha a que mais
-        combina com você!
+        Preparamos com carinho uma lista de presentes. Escolha o que mais combina com você — ao
+        selecionar um item, ele sai da lista para que ninguém mais escolha o mesmo presente.
       </p>
 
       <div class="gifts__grid" id="giftsGrid"></div>
+      <p class="gifts__empty is-hidden" id="giftsEmpty">A lista de presentes ainda não foi publicada. Volte em breve!</p>
     </div>
   </section>
 
@@ -207,8 +208,11 @@
 
       <form class="rsvp__form" id="rsvpForm">
         <div class="form__row">
-          <label for="nome">Nome completo</label>
-          <input type="text" id="nome" name="nome" required placeholder="Seu nome" />
+          <label for="nome">Seu nome</label>
+          <select id="nome" name="nome" required>
+            <option value="" disabled selected>Selecione seu nome na lista</option>
+          </select>
+          <p class="form__hint is-hidden" id="guestsEmptyHint">A lista de convidados ainda não foi publicada. Volte em breve!</p>
         </div>
 
         <div class="form__row">
@@ -240,25 +244,105 @@
     </div>
   </section>
 
+  <!-- PAINEL DA NOIVA -->
+  <section class="admin page-overlay" id="painel">
+    <button class="page-overlay__back" data-close-page="painel">&larr; Voltar ao convite</button>
+    <div class="container">
+      <p class="section-eyebrow">Só para você</p>
+      <h2 class="section-title">Área da Noiva</h2>
+
+      <div class="admin__tabs" id="adminTabs">
+        <button type="button" class="admin__tab is-active" data-tab="convidados">Convidados</button>
+        <button type="button" class="admin__tab" data-tab="confirmacoes">Confirmações</button>
+        <button type="button" class="admin__tab" data-tab="presentes">Presentes</button>
+      </div>
+
+      <div class="admin__block" data-panel="convidados">
+        <h3 class="admin__block-title">Lista de convidados</h3>
+        <p class="admin__block-hint">Só quem estiver aqui aparece para escolher o nome na hora de confirmar presença.</p>
+        <form class="rsvp__form admin__gift-form" id="adminGuestForm">
+          <div class="form__row">
+            <label for="adminGuestNames">Nomes dos convidados (um por linha)</label>
+            <textarea id="adminGuestNames" name="adminGuestNames" rows="5" placeholder="Maria Silva
+João Souza"></textarea>
+          </div>
+          <button type="submit" class="btn btn--primary">Adicionar à lista</button>
+          <p class="form__feedback" id="adminGuestFeedback"></p>
+        </form>
+
+        <p class="admin__empty is-hidden" id="adminGuestsEmpty">Nenhum convidado cadastrado ainda.</p>
+        <div class="admin__list" id="adminGuestsList"></div>
+      </div>
+
+      <div class="admin__block is-hidden" data-panel="confirmacoes">
+        <h3 class="admin__block-title">Confirmações de presença</h3>
+        <p class="admin__empty is-hidden" id="adminRsvpsEmpty">Ninguém confirmou presença ainda.</p>
+        <div class="admin__list" id="adminRsvpsList"></div>
+      </div>
+
+      <div class="admin__block is-hidden" data-panel="presentes">
+        <h3 class="admin__block-title">Gerenciar presentes</h3>
+        <form class="rsvp__form admin__gift-form" id="adminGiftForm">
+          <div class="form__row">
+            <label for="adminGiftName">Nome do presente</label>
+            <input type="text" id="adminGiftName" name="adminGiftName" required placeholder="Ex.: Jogo de panelas" />
+          </div>
+          <div class="form__row">
+            <label for="adminGiftDescription">Descrição (opcional)</label>
+            <textarea id="adminGiftDescription" name="adminGiftDescription" rows="2" placeholder="Detalhes, marca, link da loja..."></textarea>
+          </div>
+          <button type="submit" class="btn btn--primary">Adicionar presente</button>
+          <p class="form__feedback" id="adminGiftFeedback"></p>
+        </form>
+
+        <p class="admin__empty is-hidden" id="adminGiftsEmpty">Nenhum presente cadastrado ainda.</p>
+        <div class="admin__list" id="adminGiftsList"></div>
+      </div>
+    </div>
+  </section>
+
   <!-- FOOTER -->
   <footer class="footer">
     <p class="footer__names">Ruth <span class="amp">&amp;</span> Victor</p>
     <p class="footer__date">5 de dezembro de 2026</p>
     <p class="footer__made">Feito com &#10084; para celebrar esse dia</p>
+    <button class="footer__login-link" id="footerLoginBtn">Acesso da noiva</button>
   </footer>
 
   <!-- GIFT MODAL -->
   <div class="modal" id="giftModal">
     <div class="modal__box">
       <button class="modal__close" id="modalClose" aria-label="Fechar">&times;</button>
-      <h3 id="modalGiftTitle">Cota Presente</h3>
-      <p class="modal__value">R$ 100,00</p>
-      <p class="modal__text">
-        A chave PIX para presentear ainda será divulgada. Assim que estiver disponível,
-        vamos atualizar esta página. Obrigado pelo carinho! 💛
-      </p>
-      <p class="modal__text modal__text--muted">Chave PIX: <em>a definir</em></p>
-      <button class="btn btn--primary" id="modalMarkGiven">Já presenteei essa cota</button>
+      <h3 id="modalGiftTitle">Presente</h3>
+      <p class="modal__text" id="modalGiftDescription"></p>
+      <form class="rsvp__form" id="giftClaimForm">
+        <div class="form__row">
+          <label for="giftClaimName">Seu nome completo</label>
+          <input type="text" id="giftClaimName" name="giftClaimName" required placeholder="Nome e sobrenome" />
+        </div>
+        <button type="submit" class="btn btn--primary">Confirmar escolha</button>
+        <p class="form__feedback" id="giftClaimFeedback"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- LOGIN MODAL (acesso da noiva) -->
+  <div class="modal" id="loginModal">
+    <div class="modal__box">
+      <button class="modal__close" id="loginModalClose" aria-label="Fechar">&times;</button>
+      <h3>Acesso da noiva</h3>
+      <form class="rsvp__form" id="loginForm">
+        <div class="form__row">
+          <label for="loginEmail">E-mail</label>
+          <input type="email" id="loginEmail" name="loginEmail" required autocomplete="username" />
+        </div>
+        <div class="form__row">
+          <label for="loginPassword">Senha</label>
+          <input type="password" id="loginPassword" name="loginPassword" required autocomplete="current-password" />
+        </div>
+        <button type="submit" class="btn btn--primary">Entrar</button>
+        <p class="form__feedback" id="loginFeedback"></p>
+      </form>
     </div>
   </div>
 
@@ -271,12 +355,19 @@
       <button class="fab__item" data-open-page="confirmar">
         <span class="fab__item-icon">💌</span> Confirmar Presença
       </button>
+      <button class="fab__item is-hidden" id="fabAdminItem" data-open-page="painel">
+        <span class="fab__item-icon">🔐</span> Painel da Noiva
+      </button>
     </div>
     <button class="fab__toggle" id="fabToggle" aria-label="Abrir menu" aria-expanded="false">
       <span class="fab__toggle-lines"><span></span><span></span><span></span></span>
     </button>
   </div>
 
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-init.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

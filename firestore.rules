@@ -1,0 +1,52 @@
+rules_version = '2';
+
+// Regras do Firestore para o site do casamento.
+// Cole este conteúdo em: Firebase Console > Firestore Database > Regras.
+//
+// Resumo:
+// - guests: lista de convidados. Qualquer um pode ler (o formulário de RSVP
+//   precisa listar os nomes para o convidado escolher o seu); só a noiva
+//   autenticada pode adicionar/remover convidados.
+// - gifts: qualquer um pode ler (para ver a lista de presentes disponíveis);
+//   só a noiva autenticada pode criar/apagar presentes; um convidado pode
+//   "escolher" um presente (gravar claimedBy/claimedAt) só enquanto ele
+//   ainda estiver disponível (claimedBy == null) e sem mexer em mais nada
+//   do documento.
+// - rsvps: só pode ser criada uma confirmação referenciando um guestId que
+//   exista de fato na lista de convidados (impede gente de fora da lista
+//   de confirmar presença); só a noiva autenticada pode ler/listar as
+//   confirmações (mensagens dos convidados não ficam públicas).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /guests/{guestId} {
+      allow read: if true;
+      allow create, delete: if request.auth != null;
+    }
+
+    match /gifts/{giftId} {
+      allow read: if true;
+      allow create, delete: if request.auth != null;
+
+      // Atualização feita pela noiva (autenticada): livre.
+      // Atualização feita por um convidado (sem login): só é permitida se
+      // o presente ainda estiver disponível e se o convidado só estiver
+      // alterando claimedBy/claimedAt (não pode mexer em nome, descrição
+      // etc.).
+      allow update: if request.auth != null
+        || (
+          resource.data.claimedBy == null
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['claimedBy', 'claimedAt'])
+          && request.resource.data.claimedBy is string
+          && request.resource.data.claimedBy.size() > 0
+        );
+    }
+
+    match /rsvps/{rsvpId} {
+      allow create: if request.resource.data.guestId is string
+        && exists(/databases/$(database)/documents/guests/$(request.resource.data.guestId));
+      allow read, list: if request.auth != null;
+      allow update, delete: if request.auth != null;
+    }
+  }
+}
