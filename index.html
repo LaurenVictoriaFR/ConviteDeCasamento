@@ -291,6 +291,11 @@ João Souza"></textarea>
             <label for="adminGiftDescription">Descrição (opcional)</label>
             <textarea id="adminGiftDescription" name="adminGiftDescription" rows="2" placeholder="Detalhes, marca, link da loja..."></textarea>
           </div>
+          <div class="form__row">
+            <label for="adminGiftImage">Foto do presente (opcional)</label>
+            <input type="file" id="adminGiftImage" name="adminGiftImage" accept="image/*" />
+            <img class="admin__gift-preview is-hidden" id="adminGiftPreview" alt="Pré-visualização da foto do presente" />
+          </div>
           <button type="submit" class="btn btn--primary">Adicionar presente</button>
           <p class="form__feedback" id="adminGiftFeedback"></p>
         </form>
@@ -346,23 +351,23 @@ João Souza"></textarea>
     </div>
   </div>
 
-  <!-- FLOATING MENU -->
-  <div class="fab" id="fab">
-    <div class="fab__menu" id="fabMenu">
-      <button class="fab__item" data-open-page="presentes">
-        <span class="fab__item-icon">🎁</span> Lista de Presentes
+  <!-- SITE MENU (PC: fixo no header · Celular: fixo embaixo da tela) -->
+  <nav class="site-menu" id="siteMenu" aria-label="Menu principal">
+    <div class="site-menu__inner">
+      <button class="site-menu__item" data-open-page="presentes">
+        <span class="site-menu__icon">🎁</span>
+        <span class="site-menu__label">Lista de Presentes</span>
       </button>
-      <button class="fab__item" data-open-page="confirmar">
-        <span class="fab__item-icon">💌</span> Confirmar Presença
+      <button class="site-menu__item" data-open-page="confirmar">
+        <span class="site-menu__icon">💌</span>
+        <span class="site-menu__label">Confirmar Presença</span>
       </button>
-      <button class="fab__item is-hidden" id="fabAdminItem" data-open-page="painel">
-        <span class="fab__item-icon">🔐</span> Painel da Noiva
+      <button class="site-menu__item is-hidden" id="siteMenuAdminItem" data-open-page="painel">
+        <span class="site-menu__icon">🔐</span>
+        <span class="site-menu__label">Painel da Noiva</span>
       </button>
     </div>
-    <button class="fab__toggle" id="fabToggle" aria-label="Abrir menu" aria-expanded="false">
-      <span class="fab__toggle-lines"><span></span><span></span><span></span></span>
-    </button>
-  </div>
+  </nav>
 
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>

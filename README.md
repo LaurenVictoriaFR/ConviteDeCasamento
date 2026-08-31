@@ -76,7 +76,9 @@ convidado não tem como confirmar.
   uma vez, um por linha) — sem isso ninguém consegue confirmar presença.
 - **Lista de presentes**: não é mais um array fixo no código — a noiva cadastra os
   presentes pelo próprio site, no "Painel da Noiva" (depois de logar), uma vez que o
-  Firebase estiver configurado (veja seção acima).
+  Firebase estiver configurado (veja seção acima). A foto do presente (opcional) é
+  redimensionada no próprio navegador e gravada como base64 dentro do documento no
+  Firestore — não é necessário configurar o Firebase Storage.
 
 ## Estrutura
 

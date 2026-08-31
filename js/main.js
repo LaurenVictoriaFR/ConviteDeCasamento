@@ -139,25 +139,11 @@ updateCountdown();
 setInterval(updateCountdown, 1000);
 
 // ------------------------------------------------------------------
-// MENU FLUTUANTE (FAB) + PÁGINAS EM ABA (Presentes / Confirmar Presença / Painel)
+// MENU DO SITE (PC: fixo no header · Celular: fixo embaixo) + PÁGINAS
+// EM ABA (Presentes / Confirmar Presença / Painel)
 // ------------------------------------------------------------------
-const fab = document.getElementById('fab');
-const fabToggle = document.getElementById('fabToggle');
-const fabMenu = document.getElementById('fabMenu');
-const fabAdminItem = document.getElementById('fabAdminItem');
+const siteMenuAdminItem = document.getElementById('siteMenuAdminItem');
 const pageOverlays = document.querySelectorAll('.page-overlay');
-
-function toggleFabMenu(forceOpen) {
-  const shouldOpen = forceOpen !== undefined ? forceOpen : !fabMenu.classList.contains('is-open');
-  fabMenu.classList.toggle('is-open', shouldOpen);
-  fabToggle.setAttribute('aria-expanded', String(shouldOpen));
-}
-
-fabToggle.addEventListener('click', () => toggleFabMenu());
-
-document.addEventListener('click', (e) => {
-  if (!fab.contains(e.target)) toggleFabMenu(false);
-});
 
 function openPage(id) {
   const page = document.getElementById(id);
@@ -177,7 +163,6 @@ function closePage(id) {
 document.querySelectorAll('[data-open-page]').forEach((btn) => {
   btn.addEventListener('click', () => {
     openPage(btn.dataset.openPage);
-    toggleFabMenu(false);
   });
 });
 
@@ -188,7 +173,6 @@ document.querySelectorAll('[data-close-page]').forEach((btn) => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     pageOverlays.forEach((p) => closePage(p.id));
-    toggleFabMenu(false);
     closeGiftModal();
     closeLoginModal();
   }
@@ -243,7 +227,7 @@ loginForm.addEventListener('submit', async (e) => {
 // Liga/desliga a interface da noiva conforme o estado de autenticação.
 auth.onAuthStateChanged((user) => {
   footerLoginBtn.textContent = user ? 'Sair' : 'Acesso da noiva';
-  fabAdminItem.classList.toggle('is-hidden', !user);
+  siteMenuAdminItem.classList.toggle('is-hidden', !user);
 
   if (!user && document.getElementById('painel').classList.contains('is-open')) {
     closePage('painel');
@@ -278,8 +262,11 @@ availableGiftsQuery.onSnapshot((snapshot) => {
     const gift = docSnap.data();
     const card = document.createElement('div');
     card.className = 'gift-card';
+    const media = gift.image
+      ? `<img class="gift-card__image" src="${gift.image}" alt="Foto do presente ${escapeHtml(gift.name)}" />`
+      : `<div class="gift-card__icon">🎁</div>`;
     card.innerHTML = `
-      <div class="gift-card__icon">🎁</div>
+      ${media}
       <h3>${escapeHtml(gift.name)}</h3>
       ${gift.description ? `<p class="gift-card__description">${escapeHtml(gift.description)}</p>` : ''}
       <button class="gift-card__btn" data-id="${docSnap.id}">Escolher esse presente</button>
@@ -525,6 +512,7 @@ function startAdminListeners() {
         const item = document.createElement('div');
         item.className = 'admin__item';
         item.innerHTML = `
+          ${gift.image ? `<img class="admin__item-thumb" src="${gift.image}" alt="" />` : ''}
           <p class="admin__item-title">${escapeHtml(gift.name)}</p>
           <p class="admin__item-meta">${gift.claimedBy ? `Escolhido por <strong>${escapeHtml(gift.claimedBy)}</strong>` : 'Disponível'}</p>
           <button class="admin__item-delete" data-id="${docSnap.id}">Excluir</button>
@@ -583,6 +571,79 @@ adminGuestsList.addEventListener('click', async (e) => {
   await guestsCollection.doc(btn.dataset.id).delete();
 });
 
+// Foto do presente: redimensiona no navegador e grava como base64 direto
+// no Firestore (sem precisar configurar o Firebase Storage à parte).
+const adminGiftImageInput = document.getElementById('adminGiftImage');
+const adminGiftPreview = document.getElementById('adminGiftPreview');
+let adminGiftImageData = null;
+
+function resizeImageFile(file, maxSize, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('read-failed'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('decode-failed'));
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = Math.round((height * maxSize) / width);
+            width = maxSize;
+          } else {
+            width = Math.round((width * maxSize) / height);
+            height = maxSize;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Tenta qualidades decrescentes até caber com folga no limite de 1MB
+// por documento do Firestore.
+async function processGiftImage(file) {
+  const attempts = [[640, 0.72], [640, 0.5], [480, 0.4]];
+  let lastDataUrl = null;
+  for (const [maxSize, quality] of attempts) {
+    lastDataUrl = await resizeImageFile(file, maxSize, quality);
+    if (lastDataUrl.length < 700000) return lastDataUrl;
+  }
+  throw new Error('image-too-large');
+}
+
+function resetAdminGiftImage() {
+  adminGiftImageData = null;
+  adminGiftImageInput.value = '';
+  adminGiftPreview.classList.add('is-hidden');
+  adminGiftPreview.removeAttribute('src');
+}
+
+adminGiftImageInput.addEventListener('change', async () => {
+  const file = adminGiftImageInput.files[0];
+  if (!file) {
+    resetAdminGiftImage();
+    return;
+  }
+
+  try {
+    adminGiftImageData = await processGiftImage(file);
+    adminGiftPreview.src = adminGiftImageData;
+    adminGiftPreview.classList.remove('is-hidden');
+  } catch (err) {
+    resetAdminGiftImage();
+    adminGiftFeedback.textContent = 'Não foi possível usar essa foto. Tente uma imagem menor.';
+    wrapUppercaseS(adminGiftFeedback);
+  }
+});
+
 adminGiftForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const name = document.getElementById('adminGiftName').value.trim();
@@ -593,11 +654,13 @@ adminGiftForm.addEventListener('submit', async (e) => {
     await giftsCollection.add({
       name,
       description: description || null,
+      image: adminGiftImageData || null,
       claimedBy: null,
       claimedAt: null,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
     adminGiftForm.reset();
+    resetAdminGiftImage();
     adminGiftFeedback.textContent = 'Presente adicionado à lista!';
   } catch (err) {
     adminGiftFeedback.textContent = 'Não foi possível adicionar agora. Tente novamente.';
