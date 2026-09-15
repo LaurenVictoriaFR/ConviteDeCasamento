@@ -447,14 +447,13 @@ img { max-width: 100%; display: block; }
   width: 220px;
   height: 220px;
   border-radius: 50%;
+  overflow: hidden;
 }
 
-.photo-placeholder--wide {
+.photo-placeholder--round img {
   width: 100%;
-  max-width: 720px;
-  height: 340px;
-  border-radius: var(--radius);
-  margin-bottom: 28px;
+  height: 100%;
+  object-fit: cover;
 }
 
 .story__together {
@@ -465,6 +464,87 @@ img { max-width: 100%; display: block; }
 
 .story__text {
   color: var(--ink-soft);
+}
+
+/* COUPLE CAROUSEL */
+.carousel {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+  aspect-ratio: 4 / 3;
+  margin: 0 auto 28px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--cream-dark);
+}
+
+.carousel__track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s ease;
+}
+
+.carousel__slide {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+}
+
+.carousel__slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.carousel__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--ink);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.carousel__arrow:hover {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.carousel__arrow--prev { left: 14px; }
+.carousel__arrow--next { right: 14px; }
+
+.carousel__dots {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+}
+
+.carousel__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+}
+
+.carousel__dot.is-active {
+  background: #fff;
 }
 
 /* CEREMONY */
@@ -1037,7 +1117,7 @@ img { max-width: 100%; display: block; }
 }
 
 .admin__item-title {
-  font-family: var(--serif);
+  font-family: var(--sans);
   font-size: 1.15rem;
   margin: 0 0 4px;
 }
@@ -1161,7 +1241,6 @@ img { max-width: 100%; display: block; }
   .story__together { padding: 0 4px; }
 
   .photo-placeholder--round { width: 180px; height: 180px; }
-  .photo-placeholder--wide { height: 240px; }
 
   .wedding-calendar { max-width: 320px; }
 
@@ -1218,7 +1297,7 @@ img { max-width: 100%; display: block; }
 
   .story__couple { flex-direction: column; gap: 40px; }
   .photo-placeholder--round { width: 160px; height: 160px; }
-  .photo-placeholder--wide { height: 200px; }
+  .carousel__arrow { width: 34px; height: 34px; font-size: 1.2rem; }
 
   .wedding-calendar { max-width: 100%; }
   .wedding-calendar__card { padding: 24px 4px 22px; }

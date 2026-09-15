@@ -676,6 +676,59 @@ adminGiftsList.addEventListener('click', async (e) => {
 });
 
 // ------------------------------------------------------------------
+// CARROSSEL DE FOTOS DO CASAL
+// ------------------------------------------------------------------
+const coupleCarousel = document.getElementById('coupleCarousel');
+if (coupleCarousel) {
+  const track = document.getElementById('coupleCarouselTrack');
+  const slides = Array.from(track.children);
+  const dotsContainer = document.getElementById('coupleCarouselDots');
+  const prevBtn = document.getElementById('coupleCarouselPrev');
+  const nextBtn = document.getElementById('coupleCarouselNext');
+  const AUTOPLAY_MS = 5000;
+  let current = 0;
+  let autoplayTimer = null;
+
+  slides.forEach((_, i) => {
+    const dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'carousel__dot';
+    dot.setAttribute('aria-label', `Ir para a foto ${i + 1}`);
+    dot.addEventListener('click', () => goTo(i));
+    dotsContainer.appendChild(dot);
+  });
+  const dots = Array.from(dotsContainer.children);
+
+  function render() {
+    track.style.transform = `translateX(-${current * 100}%)`;
+    dots.forEach((dot, i) => dot.classList.toggle('is-active', i === current));
+  }
+
+  function goTo(index) {
+    current = (index + slides.length) % slides.length;
+    render();
+  }
+
+  function next() { goTo(current + 1); }
+  function prev() { goTo(current - 1); }
+
+  function startAutoplay() {
+    stopAutoplay();
+    autoplayTimer = setInterval(next, AUTOPLAY_MS);
+  }
+
+  function stopAutoplay() {
+    if (autoplayTimer) clearInterval(autoplayTimer);
+  }
+
+  prevBtn.addEventListener('click', () => { prev(); startAutoplay(); });
+  nextBtn.addEventListener('click', () => { next(); startAutoplay(); });
+
+  render();
+  startAutoplay();
+}
+
+// ------------------------------------------------------------------
 // Varre a página inteira; a própria função filtra e só troca o "S"
 // nos trechos que estiverem em Shelley Script (ver comentário acima).
 // ------------------------------------------------------------------

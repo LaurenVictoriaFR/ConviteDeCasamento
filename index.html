@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ruth & Victor | Nosso Casamento</title>
-  <meta name="description" content="Site do casamento de Ruth e Victor - 5 de dezembro" />
+  <title>Ruth & Víctor | Nosso Casamento</title>
+  <meta name="description" content="Site do casamento de Ruth e Víctor - 5 de dezembro" />
 
   <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -32,7 +32,7 @@
     <img class="hero__flower hero__flower--br" src="images/flor-galho-2.png" alt="" aria-hidden="true" />
     <div class="hero__content">
       <p class="hero__eyebrow">Vamos nos casar</p>
-      <h1 class="hero__names">Ruth <span>&amp;</span> Victor</h1>
+      <h1 class="hero__names">Ruth <span>&amp;</span> Víctor</h1>
       <div class="hero__divider" aria-hidden="true">
         <svg viewBox="0 0 100 20" xmlns="http://www.w3.org/2000/svg">
           <path d="M0 10 Q 25 -5, 50 10 T 100 10" stroke="currentColor" fill="none" stroke-width="1"/>
@@ -92,7 +92,7 @@
       <div class="story__couple">
         <div class="story__person">
           <div class="photo-placeholder photo-placeholder--round">
-            <span>Foto da Ruth</span>
+            <img src="images/ruth4.jpeg" alt="Foto da Ruth" loading="lazy" />
           </div>
           <h3>Ruth</h3>
           <p class="story__bio">Em breve, um pouquinho sobre a noiva vai aparecer aqui.</p>
@@ -102,19 +102,26 @@
 
         <div class="story__person">
           <div class="photo-placeholder photo-placeholder--round">
-            <span>Foto do Victor</span>
+            <img src="images/victor3.jpeg" alt="Foto do Víctor" loading="lazy" />
           </div>
-          <h3>Victor</h3>
+          <h3>Víctor</h3>
           <p class="story__bio">Em breve, um pouquinho sobre o noivo vai aparecer aqui.</p>
         </div>
       </div>
 
       <div class="story__together">
-        <div class="photo-placeholder photo-placeholder--wide">
-          <span>Foto do casal</span>
+        <div class="carousel" id="coupleCarousel">
+          <div class="carousel__track" id="coupleCarouselTrack">
+            <div class="carousel__slide"><img src="images/Casal1.jpeg" alt="Foto do casal 1" loading="lazy" /></div>
+            <div class="carousel__slide"><img src="images/Casal2.jpeg" alt="Foto do casal 2" loading="lazy" /></div>
+            <div class="carousel__slide"><img src="images/Casal3.jpeg" alt="Foto do casal 3" loading="lazy" style="object-position: center 20%;" /></div>
+          </div>
+          <button type="button" class="carousel__arrow carousel__arrow--prev" id="coupleCarouselPrev" aria-label="Foto anterior">&#8249;</button>
+          <button type="button" class="carousel__arrow carousel__arrow--next" id="coupleCarouselNext" aria-label="Próxima foto">&#8250;</button>
+          <div class="carousel__dots" id="coupleCarouselDots"></div>
         </div>
         <p class="story__text">
-          Aqui vai a história de como Ruth e Victor se conheceram, os momentos marcantes
+          Aqui vai a história de como Ruth e Víctor se conheceram, os momentos marcantes
           do namoro e o caminho até o pedido de casamento. Assim que tivermos as fotos e os
           detalhes, vamos completar este espaço com muito carinho.
         </p>
@@ -308,7 +315,7 @@ João Souza"></textarea>
 
   <!-- FOOTER -->
   <footer class="footer">
-    <p class="footer__names">Ruth <span class="amp">&amp;</span> Victor</p>
+    <p class="footer__names">Ruth <span class="amp">&amp;</span> Víctor</p>
     <p class="footer__date">5 de dezembro de 2026</p>
     <p class="footer__made">Feito com &#10084; para celebrar esse dia</p>
     <button class="footer__login-link" id="footerLoginBtn">Acesso da noiva</button>
