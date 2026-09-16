@@ -466,6 +466,23 @@ img { max-width: 100%; display: block; }
   color: var(--ink-soft);
 }
 
+.story__verse {
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--gold);
+  font-size: 1.75rem;
+  margin: 24px 0;
+}
+
+.story__verse-ref {
+  display: block;
+  font-family: var(--sans);
+  font-style: normal;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  margin-top: 6px;
+}
+
 /* COUPLE CAROUSEL */
 .carousel {
   position: relative;
@@ -1030,6 +1047,14 @@ img { max-width: 100%; display: block; }
 }
 
 .form__row textarea { resize: vertical; }
+
+/* O <select> fica branco sobre fundo escuro (estilo do form), mas o
+   navegador abre a lista de opções com fundo branco nativo — sem isso
+   o texto das opções fica branco sobre branco. */
+.form__row select option {
+  color: var(--ink);
+  background: var(--white);
+}
 
 .form__hint {
   margin-top: 8px;
