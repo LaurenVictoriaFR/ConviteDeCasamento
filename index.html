@@ -155,7 +155,7 @@
         <div class="ceremony__detail">
           <span class="ceremony__icon">📅</span>
           <h3>Data</h3>
-          <p>Sábado, 5 de dezembro de 2026<br />às 16h30</p>
+          <p>Sábado, 5 de dezembro de 2026<br />Nossa cerimônia terá início pontualmente às 16h30</p>
         </div>
         <!-- OPÇÃO 2 (ativa): endereço em cima, mapa embaixo, empilhados
              dentro do mesmo card "Local". -->
@@ -184,7 +184,26 @@
         <div class="ceremony__detail">
           <span class="ceremony__icon">👗</span>
           <h3>Traje</h3>
-          <p>Esporte fino / a definir</p>
+          <p>Esporte Fino</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AVISOS -->
+  <section class="avisos" id="avisos">
+    <div class="container container--narrow">
+      <h2 class="section-title">Avisos</h2>
+      <div class="avisos__list" id="avisosList">
+        <div class="avisos__item">
+          <h3>Confirmação de presença 🤍</h3>
+          <p>
+            Nosso grande dia está chegando e queremos muito ter você com a gente! ✨<br /><br />
+            Confirme sua presença até 31/10. Após essa data, entenderemos com carinho que você não
+            poderá estar conosco.<br /><br />
+            E, para quem quiser nos presentear, deixamos nossa Lista de Presentes disponível no
+            site. 🎁🤍
+          </p>
         </div>
       </div>
     </div>
@@ -223,16 +242,6 @@
         </div>
 
         <div class="form__row">
-          <label for="convidados">Número de acompanhantes</label>
-          <select id="convidados" name="convidados">
-            <option value="0">Vou sozinho(a)</option>
-            <option value="1">+1 acompanhante</option>
-            <option value="2">+2 acompanhantes</option>
-            <option value="3">+3 acompanhantes</option>
-          </select>
-        </div>
-
-        <div class="form__row">
           <label>Você vai comparecer?</label>
           <div class="form__radios">
             <label class="radio"><input type="radio" name="presenca" value="sim" checked /> Sim, estarei lá!</label>
@@ -265,7 +274,7 @@
       </div>
 
       <div class="admin__block" data-panel="convidados">
-        <h3 class="admin__block-title">Lista de convidados</h3>
+        <h3 class="admin__block-title">Lista de convidados <span class="admin__count" id="adminGuestsCount">0</span></h3>
         <p class="admin__block-hint">Só quem estiver aqui aparece para escolher o nome na hora de confirmar presença.</p>
         <form class="rsvp__form admin__gift-form" id="adminGuestForm">
           <div class="form__row">
@@ -282,13 +291,19 @@ João Souza"></textarea>
       </div>
 
       <div class="admin__block is-hidden" data-panel="confirmacoes">
-        <h3 class="admin__block-title">Confirmações de presença</h3>
+        <h3 class="admin__block-title">Confirmações de presença <span class="admin__count" id="adminRsvpsCount">0</span></h3>
+        <p class="admin__block-hint">Convidados que confirmaram presença.</p>
         <p class="admin__empty is-hidden" id="adminRsvpsEmpty">Ninguém confirmou presença ainda.</p>
         <div class="admin__list" id="adminRsvpsList"></div>
       </div>
 
       <div class="admin__block is-hidden" data-panel="presentes">
         <h3 class="admin__block-title">Gerenciar presentes</h3>
+        <p class="admin__block-hint">
+          <span class="admin__count" id="adminGiftsAvailableCount">0</span> disponíveis
+          &nbsp;·&nbsp;
+          <span class="admin__count admin__count--muted" id="adminGiftsClaimedCount">0</span> escolhidos
+        </p>
         <form class="rsvp__form admin__gift-form" id="adminGiftForm">
           <div class="form__row">
             <label for="adminGiftName">Nome do presente</label>
@@ -355,6 +370,31 @@ João Souza"></textarea>
         <button type="submit" class="btn btn--primary">Entrar</button>
         <p class="form__feedback" id="loginFeedback"></p>
       </form>
+    </div>
+  </div>
+
+  <!-- MÚSICA DE FUNDO (disco flutuante) -->
+  <div class="music-player" id="musicPlayer">
+    <audio id="bgAudio" src="audio/musica-cerimonia.mp3" loop preload="auto"></audio>
+    <button
+      class="music-player__disc"
+      id="musicDiscBtn"
+      aria-label="Abrir controles de música"
+      aria-expanded="false"
+    >
+      <span class="music-player__disc-label"></span>
+    </button>
+    <div class="music-player__panel is-hidden" id="musicPanel">
+      <button class="music-player__toggle" id="musicToggleBtn" aria-label="Pausar música">&#9208;</button>
+      <input
+        class="music-player__volume"
+        id="musicVolume"
+        type="range"
+        min="0"
+        max="100"
+        value="30"
+        aria-label="Volume da música"
+      />
     </div>
   </div>
 

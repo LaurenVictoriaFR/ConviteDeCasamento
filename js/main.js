@@ -15,6 +15,9 @@ const WEDDING_DATE = new Date('2026-12-05T16:30:00');
 // style.css (bloco "ENVELOPE INTRO").
 const ENVELOPE_ANIMATION_MS = 1700;
 
+// Volume inicial da música de fundo (0 a 1) ao abrir o convite.
+const DEFAULT_MUSIC_VOLUME = 0.3;
+
 // ------------------------------------------------------------------
 // ENVELOPE INTRO (selo some ao clicar, a aba abre pra cima e o envelope
 // inteiro transparece antes de revelar o convite)
@@ -36,6 +39,13 @@ function openEnvelope() {
   if (envelopeIntro.classList.contains('is-opening')) return;
   envelopeIntro.classList.add('is-opening');
   envelopeSeal.disabled = true;
+  // Chamado de dentro do clique no selo: precisa ser síncrono aqui para
+  // contar como gesto do usuário e não ser bloqueado pela política de
+  // autoplay do navegador.
+  if (bgAudio) {
+    bgAudio.volume = DEFAULT_MUSIC_VOLUME;
+    bgAudio.play().catch(() => {});
+  }
   setTimeout(finishEnvelopeIntro, ENVELOPE_ANIMATION_MS);
 }
 
@@ -44,6 +54,51 @@ function openEnvelope() {
 if (envelopeIntro && envelopeSeal) {
   lockPageScroll(true);
   envelopeSeal.addEventListener('click', openEnvelope);
+}
+
+// ------------------------------------------------------------------
+// MÚSICA DE FUNDO (disco flutuante: toca ao abrir o envelope; clicar
+// no disco abre um painel com play/pause e controle de volume)
+// ------------------------------------------------------------------
+const bgAudio = document.getElementById('bgAudio');
+const musicDiscBtn = document.getElementById('musicDiscBtn');
+const musicPanel = document.getElementById('musicPanel');
+const musicToggleBtn = document.getElementById('musicToggleBtn');
+const musicVolume = document.getElementById('musicVolume');
+
+if (bgAudio && musicDiscBtn && musicPanel && musicToggleBtn && musicVolume) {
+  bgAudio.volume = DEFAULT_MUSIC_VOLUME;
+  musicVolume.value = String(Math.round(DEFAULT_MUSIC_VOLUME * 100));
+
+  musicDiscBtn.addEventListener('click', () => {
+    const isOpen = musicPanel.classList.toggle('is-open');
+    musicPanel.classList.toggle('is-hidden', !isOpen);
+    musicDiscBtn.setAttribute('aria-expanded', String(isOpen));
+  });
+
+  musicToggleBtn.addEventListener('click', () => {
+    if (bgAudio.paused) {
+      bgAudio.play().catch(() => {});
+    } else {
+      bgAudio.pause();
+    }
+  });
+
+  musicVolume.addEventListener('input', () => {
+    bgAudio.volume = Number(musicVolume.value) / 100;
+  });
+
+  bgAudio.addEventListener('play', () => {
+    musicDiscBtn.classList.add('is-playing');
+    musicToggleBtn.innerHTML = '&#9208;';
+    musicToggleBtn.setAttribute('aria-label', 'Pausar música');
+  });
+
+  bgAudio.addEventListener('pause', () => {
+    musicDiscBtn.classList.remove('is-playing');
+    musicToggleBtn.innerHTML = '&#9654;';
+    musicToggleBtn.setAttribute('aria-label', 'Tocar música');
+  });
 }
 
 // ------------------------------------------------------------------
@@ -397,7 +452,6 @@ rsvpForm.addEventListener('submit', async (e) => {
   const guestName = guestSelect.selectedOptions[0] ? guestSelect.selectedOptions[0].textContent : '';
   if (!guestId) return;
 
-  const convidados = document.getElementById('convidados').value;
   const presenca = rsvpForm.querySelector('input[name="presenca"]:checked').value;
   const mensagem = document.getElementById('mensagem').value.trim();
 
@@ -405,7 +459,6 @@ rsvpForm.addEventListener('submit', async (e) => {
     await db.collection('rsvps').add({
       guestId,
       nome: guestName,
-      convidados,
       presenca,
       mensagem,
       criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
@@ -436,10 +489,14 @@ const adminGuestForm = document.getElementById('adminGuestForm');
 const adminGuestFeedback = document.getElementById('adminGuestFeedback');
 const adminRsvpsList = document.getElementById('adminRsvpsList');
 const adminRsvpsEmpty = document.getElementById('adminRsvpsEmpty');
+const adminGuestsCount = document.getElementById('adminGuestsCount');
+const adminRsvpsCount = document.getElementById('adminRsvpsCount');
 const adminGiftsList = document.getElementById('adminGiftsList');
 const adminGiftsEmpty = document.getElementById('adminGiftsEmpty');
 const adminGiftForm = document.getElementById('adminGiftForm');
 const adminGiftFeedback = document.getElementById('adminGiftFeedback');
+const adminGiftsAvailableCount = document.getElementById('adminGiftsAvailableCount');
+const adminGiftsClaimedCount = document.getElementById('adminGiftsClaimedCount');
 
 let unsubscribeAdminGuests = null;
 let unsubscribeRsvps = null;
@@ -465,6 +522,7 @@ function startAdminListeners() {
     (snapshot) => {
       adminGuestsList.innerHTML = '';
       adminGuestsEmpty.classList.toggle('is-hidden', !snapshot.empty);
+      adminGuestsCount.textContent = snapshot.size;
 
       snapshot.forEach((docSnap) => {
         const guest = docSnap.data();
@@ -485,6 +543,7 @@ function startAdminListeners() {
     (snapshot) => {
       adminRsvpsList.innerHTML = '';
       adminRsvpsEmpty.classList.toggle('is-hidden', !snapshot.empty);
+      adminRsvpsCount.textContent = snapshot.docs.filter((docSnap) => docSnap.data().presenca === 'sim').length;
 
       snapshot.forEach((docSnap) => {
         const rsvp = docSnap.data();
@@ -492,7 +551,7 @@ function startAdminListeners() {
         item.className = 'admin__item';
         item.innerHTML = `
           <p class="admin__item-title">${escapeHtml(rsvp.nome || '(sem nome)')}</p>
-          <p class="admin__item-meta">${PRESENCA_LABELS[rsvp.presenca] || rsvp.presenca} · ${escapeHtml(String(rsvp.convidados ?? '0'))} acompanhante(s)</p>
+          <p class="admin__item-meta">${PRESENCA_LABELS[rsvp.presenca] || rsvp.presenca}</p>
           ${rsvp.mensagem ? `<p class="admin__item-message">"${escapeHtml(rsvp.mensagem)}"</p>` : ''}
         `;
         adminRsvpsList.appendChild(item);
@@ -506,6 +565,10 @@ function startAdminListeners() {
     (snapshot) => {
       adminGiftsList.innerHTML = '';
       adminGiftsEmpty.classList.toggle('is-hidden', !snapshot.empty);
+
+      const claimedCount = snapshot.docs.filter((docSnap) => docSnap.data().claimedBy).length;
+      adminGiftsClaimedCount.textContent = claimedCount;
+      adminGiftsAvailableCount.textContent = snapshot.size - claimedCount;
 
       snapshot.forEach((docSnap) => {
         const gift = docSnap.data();
@@ -535,6 +598,10 @@ function stopAdminListeners() {
   adminGuestsList.innerHTML = '';
   adminRsvpsList.innerHTML = '';
   adminGiftsList.innerHTML = '';
+  adminGuestsCount.textContent = '0';
+  adminRsvpsCount.textContent = '0';
+  adminGiftsAvailableCount.textContent = '0';
+  adminGiftsClaimedCount.textContent = '0';
 }
 
 adminGuestForm.addEventListener('submit', async (e) => {
