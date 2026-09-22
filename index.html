@@ -6,6 +6,8 @@
   <title>Ruth & Víctor | Nosso Casamento</title>
   <meta name="description" content="Site do casamento de Ruth e Víctor - 5 de dezembro" />
 
+  <link rel="icon" type="image/png" href="images/favicon-32.png" />
+  <link rel="apple-touch-icon" href="images/favicon-180.png" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -46,15 +48,11 @@
   <!-- WELCOME -->
   <section class="welcome">
     <div class="container container--narrow">
+      <img class="welcome__monogram" src="images/monograma-vr.png" alt="Monograma Víctor e Ruth" loading="lazy" />
       <p class="section-eyebrow">Seja bem-vindo(a)</p>
       <h2 class="section-title">Um novo capítulo começa aqui</h2>
       <p class="welcome__text">
         Este espaço foi desenvolvido para compartilhar com vocês todos os detalhes do nosso grande dia.
-        Aqui você encontra a contagem regressiva, as informações sobre a cerimônia e o formulário
-        para confirmar presença, que <strong>deve ser preenchido até 31/10</strong>. Após essa data, entenderemos com
-        carinho que você não poderá estar conosco. Para quem quiser nos presentear, deixamos também
-        a nossa <strong>Lista de Presentes</strong> disponível no site. Contamos com a sua companhia para celebrar
-        esse momento tão especial com a gente!
       </p>
     </div>
   </section>
@@ -128,7 +126,7 @@
           Nossa história começou na igreja, onde nossos caminhos se encontraram sem que imaginássemos tudo o que Deus ainda havia preparado para nós.
         </p>
         <p class="story__text">
-          Em 05 de junho de 2017, começamos a namorar. Foram anos crescendo lado a lado, compartilhando sonhos, desafios e conquistas.
+          Em 02 de junho de 2017, começamos a namorar. Foram anos crescendo lado a lado, compartilhando sonhos, desafios e conquistas.
         </p>
         <p class="story__text">
           Depois de tantos anos construindo nossos sonhos juntos e com a formação de ambos concluída, chegou o momento de dar um novo passo. Em 04 de abril de 2026, veio o tão esperado pedido de casamento e mais um &ldquo;sim&rdquo; para a nossa história.
@@ -204,6 +202,25 @@
     </div>
   </section>
 
+  <!-- AVISOS -->
+  <section class="avisos" id="avisos">
+    <div class="container container--narrow">
+      <h2 class="section-title">Avisos</h2>
+      <div class="avisos__list" id="avisosList">
+        <div class="avisos__item">
+          <h3>Confirmação de presença 🤍</h3>
+          <p>
+            Nosso grande dia está chegando e queremos muito ter você com a gente! ✨<br /><br />
+            Confirme sua presença até 31/10. Após essa data, entenderemos com carinho que você não
+            poderá estar conosco.<br /><br />
+            E, para quem quiser nos presentear, deixamos nossa Lista de Presentes disponível no
+            site. 🎁🤍
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- GIFTS -->
   <section class="gifts page-overlay" id="presentes">
     <button class="page-overlay__back" data-close-page="presentes">&larr; Voltar ao convite</button>
@@ -211,8 +228,10 @@
       <p class="section-eyebrow">Com carinho</p>
       <h2 class="section-title">Lista de Presentes</h2>
       <p class="gifts__intro">
-        Preparamos com carinho uma lista de presentes. Escolha o que mais combina com você — ao
+        Preparamos essa lista com muito carinho. 🤍 Escolha o que mais combina com você — ao
         selecionar um item, ele sai da lista para que ninguém mais escolha o mesmo presente.
+        Caso tenha qualquer dúvida sobre tamanho, cor, modelo ou outras especificações dos presentes,
+        fique à vontade para entrar em contato conosco.
       </p>
 
       <div class="gifts__grid" id="giftsGrid"></div>
