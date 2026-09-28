@@ -388,7 +388,13 @@ João Souza"></textarea>
 
   <!-- PORTARIA (leitura dos QR codes no dia do casamento; exige login) -->
   <section class="admin portaria page-overlay" id="portaria">
-    <button class="page-overlay__back" id="portariaSignOutBtn">Sair</button>
+    <!-- A noiva (acesso completo) vê "Voltar ao convite" — só fecha a tela,
+         continua logada. Já a conta da portaria só vê "Sair", porque
+         enquanto ela está logada o resto do site fica escondido (ver
+         "body.portaria-open" em css/style.css): fechar sem deslogar a
+         deixaria sem jeito de voltar. -->
+    <button class="page-overlay__back is-hidden" id="portariaBackBtn" data-close-page="portaria">&larr; Voltar ao convite</button>
+    <button class="page-overlay__back is-hidden" id="portariaSignOutBtn">Sair</button>
     <div class="container">
       <p class="section-eyebrow">Dia do casamento</p>
       <h2 class="section-title">Portaria</h2>

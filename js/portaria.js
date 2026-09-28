@@ -16,6 +16,7 @@ const portariaResultText = document.getElementById('portariaResultText');
 const portariaSearch = document.getElementById('portariaSearch');
 const portariaEmpty = document.getElementById('portariaEmpty');
 const portariaList = document.getElementById('portariaList');
+const portariaBackBtn = document.getElementById('portariaBackBtn');
 const portariaSignOutBtn = document.getElementById('portariaSignOutBtn');
 const footerPortariaBtn = document.getElementById('footerPortariaBtn');
 
@@ -264,16 +265,24 @@ footerPortariaBtn.addEventListener('click', () => {
   }
 });
 
-// Único jeito de sair da portaria: desloga de verdade (não só fecha a
-// página) — enquanto logado, o resto do convite fica escondido (ver
-// "body.portaria-open" em css/style.css), então "Sair" precisa mesmo tirar
-// o login pra devolver o site normal.
+// A noiva (acesso completo) fecha a portaria sem deslogar — "Voltar ao
+// convite" só fecha a página, ela continua com sessão aberta.
+portariaBackBtn.addEventListener('click', stopScanner);
+
+// Já a conta da portaria não vê o resto do site enquanto logada (ver
+// "body.portaria-open" em css/style.css), então o único jeito de sair de
+// lá é deslogar de verdade — só fechar a página a deixaria sem saída.
 portariaSignOutBtn.addEventListener('click', () => {
   stopScanner();
   auth.signOut();
 });
 
 auth.onAuthStateChanged((user) => {
+  // "Voltar ao convite" pra noiva, "Sair" pra conta da portaria.
+  const isNoiva = isNoivaAccount(user);
+  portariaBackBtn.classList.toggle('is-hidden', !isNoiva);
+  portariaSignOutBtn.classList.toggle('is-hidden', isNoiva);
+
   if (user) {
     startPortariaListener();
   } else {
