@@ -73,7 +73,12 @@ service cloud.firestore {
     }
 
     match /rsvps/{rsvpId} {
-      allow create: if request.resource.data.keys().hasOnly(
+      // Prazo final: 31/10/2026 23:59:59 (horário de Brasília, UTC-3) =
+      // 2026-11-01T02:59:59Z. Depois disso, ninguém confirma presença -
+      // nem a noiva (se precisar adicionar uma resposta manual depois do
+      // prazo, mude aqui e republique).
+      allow create: if request.time < timestamp.date(2026, 11, 1) + duration.value(10799, 's')
+        && request.resource.data.keys().hasOnly(
           ['guestId', 'nome', 'presenca', 'mensagem', 'qrId', 'checkedIn', 'checkedInAt', 'criadoEm']
         )
         && request.resource.data.guestId == rsvpId

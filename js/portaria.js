@@ -16,6 +16,7 @@ const portariaResultText = document.getElementById('portariaResultText');
 const portariaSearch = document.getElementById('portariaSearch');
 const portariaEmpty = document.getElementById('portariaEmpty');
 const portariaList = document.getElementById('portariaList');
+const portariaSignOutBtn = document.getElementById('portariaSignOutBtn');
 const footerPortariaBtn = document.getElementById('footerPortariaBtn');
 
 const scannerEl = document.getElementById('scanner');
@@ -263,6 +264,15 @@ footerPortariaBtn.addEventListener('click', () => {
   }
 });
 
+// Único jeito de sair da portaria: desloga de verdade (não só fecha a
+// página) — enquanto logado, o resto do convite fica escondido (ver
+// "body.portaria-open" em css/style.css), então "Sair" precisa mesmo tirar
+// o login pra devolver o site normal.
+portariaSignOutBtn.addEventListener('click', () => {
+  stopScanner();
+  auth.signOut();
+});
+
 auth.onAuthStateChanged((user) => {
   if (user) {
     startPortariaListener();
@@ -273,10 +283,7 @@ auth.onAuthStateChanged((user) => {
   }
 });
 
-// Voltar / Escape com a câmera aberta: desliga a câmera.
+// Escape com a câmera aberta: desliga a câmera.
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') stopScanner();
-});
-document.querySelectorAll('[data-close-page="portaria"]').forEach((btn) => {
-  btn.addEventListener('click', stopScanner);
 });

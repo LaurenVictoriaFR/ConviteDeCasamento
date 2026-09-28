@@ -89,7 +89,7 @@ test('fileNameForGuest gera nome de arquivo seguro', () => {
 // Rasteriza os retângulos que o PDF desenha (na ordem, com a cor de
 // preenchimento vigente) e devolve uma imagem RGBA para o jsQR ler — prova
 // que o QR que vai no PDF é decodificável, não só que "algo foi desenhado".
-function rasterizePdfQr(sandbox, name, qrId) {
+async function rasterizePdfQr(sandbox, name, qrId) {
   const RealPdf = sandbox.jspdf.jsPDF;
   const calls = [];
   sandbox.jspdf.jsPDF = function (options) {
@@ -101,7 +101,7 @@ function rasterizePdfQr(sandbox, name, qrId) {
     doc.rect = (x, y, w, h, style) => { calls.push({ x, y, w, h, style, fill }); return rect(x, y, w, h, style); };
     return doc;
   };
-  const doc = sandbox.QrPdf.createPdf(name, qrId);
+  const doc = await sandbox.QrPdf.createPdf(name, qrId);
   sandbox.jspdf.jsPDF = RealPdf;
 
   const filled = calls.filter((c) => c.style === 'F');
@@ -125,7 +125,7 @@ function rasterizePdfQr(sandbox, name, qrId) {
   return { doc, image: { data, width: size, height: size } };
 }
 
-test('PDF: A4 de 1 página cujo QR decodifica para nome completo + id único', () => {
+test('PDF: A4 de 1 página cujo QR decodifica para nome completo + id único', async () => {
   const sandbox = loadSiteScripts();
   const names = [
     'Maria Silva',
@@ -134,7 +134,7 @@ test('PDF: A4 de 1 página cujo QR decodifica para nome completo + id único', (
   ];
   for (const name of names) {
     const qrId = sandbox.GuestUtils.generateQrId();
-    const { doc, image } = rasterizePdfQr(sandbox, name, qrId);
+    const { doc, image } = await rasterizePdfQr(sandbox, name, qrId);
 
     const bytes = Buffer.from(doc.output('arraybuffer'));
     assert.equal(bytes.subarray(0, 5).toString(), '%PDF-');
@@ -149,10 +149,10 @@ test('PDF: A4 de 1 página cujo QR decodifica para nome completo + id único', (
   }
 });
 
-test('PDF: nome muito longo não empurra o QR para fora da página', () => {
+test('PDF: nome muito longo não empurra o QR para fora da página', async () => {
   const sandbox = loadSiteScripts();
   const longName = 'Fulano '.repeat(30).trim();
-  const { image, doc } = rasterizePdfQr(sandbox, longName, sandbox.GuestUtils.generateQrId());
+  const { image, doc } = await rasterizePdfQr(sandbox, longName, sandbox.GuestUtils.generateQrId());
   assert.ok(sandbox.jsQR(image.data, image.width, image.height));
   assert.equal(doc.getNumberOfPages(), 1);
 });

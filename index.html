@@ -246,6 +246,10 @@
       <p class="section-eyebrow section-eyebrow--light">Sua presença é o nosso presente</p>
       <h2 class="section-title section-title--light">Confirme sua presença</h2>
 
+      <div class="rsvp__form rsvp__closed is-hidden" id="rsvpClosedNotice">
+        <p>As confirmações de presença encerraram em 31/10. Se precisar falar sobre isso, entre em contato diretamente com os noivos.</p>
+      </div>
+
       <form class="rsvp__form" id="rsvpForm">
         <div class="form__row">
           <label for="nomeBusca">Seu nome</label>
@@ -337,6 +341,11 @@ João Souza"></textarea>
       <div class="admin__block is-hidden" data-panel="confirmacoes">
         <h3 class="admin__block-title">Confirmações de presença <span class="admin__count" id="adminRsvpsCount">0</span></h3>
         <p class="admin__block-hint">Convidados que confirmaram presença.</p>
+
+        <div class="admin__filter" id="adminRsvpFilter" role="group" aria-label="Filtrar confirmações">
+          <button type="button" class="admin__filter-btn is-active" data-rsvp-filter="sim">Vai comparecer</button>
+          <button type="button" class="admin__filter-btn" data-rsvp-filter="nao">Não vai comparecer</button>
+        </div>
         <p class="admin__empty is-hidden" id="adminRsvpsEmpty">Ninguém confirmou presença ainda.</p>
         <div class="admin__list" id="adminRsvpsList"></div>
       </div>
@@ -379,7 +388,7 @@ João Souza"></textarea>
 
   <!-- PORTARIA (leitura dos QR codes no dia do casamento; exige login) -->
   <section class="admin portaria page-overlay" id="portaria">
-    <button class="page-overlay__back" data-close-page="portaria">&larr; Voltar ao convite</button>
+    <button class="page-overlay__back" id="portariaSignOutBtn">Sair</button>
     <div class="container">
       <p class="section-eyebrow">Dia do casamento</p>
       <h2 class="section-title">Portaria</h2>
@@ -459,7 +468,16 @@ João Souza"></textarea>
         </div>
         <div class="form__row">
           <label for="loginPassword">Senha</label>
-          <input type="password" id="loginPassword" name="loginPassword" required autocomplete="current-password" />
+          <div class="password-field">
+            <input type="password" id="loginPassword" name="loginPassword" required autocomplete="current-password" />
+            <button type="button" class="password-field__toggle" id="loginPasswordToggle" aria-label="Mostrar senha">👁</button>
+          </div>
+        </div>
+        <div class="form__row form__row--checkbox">
+          <label class="checkbox-label">
+            <input type="checkbox" id="loginRemember" checked />
+            Manter conectado
+          </label>
         </div>
         <button type="submit" class="btn btn--primary">Entrar</button>
         <p class="form__feedback" id="loginFeedback"></p>

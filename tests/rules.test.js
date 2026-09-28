@@ -36,6 +36,7 @@ test.beforeEach(async () => {
 
 const anon = () => env.unauthenticatedContext().firestore();
 const bride = () => env.authenticatedContext('noiva').firestore();
+const portaria = () => env.authenticatedContext('portaria-uid', { email: 'portaria@portaria.app' }).firestore();
 const ts = () => firebase.firestore.FieldValue.serverTimestamp();
 
 function rsvpData(guestId, name, overrides = {}) {
@@ -158,6 +159,21 @@ test('noiva autenticada lê, busca por qrId, marca entrada e apaga', async () =>
   await assertSucceeds(db.doc('rsvps/maria').update({ checkedIn: true, checkedInAt: ts() }));
   await assertSucceeds(db.collection('rsvps').where('presenca', '==', 'sim').get());
   await assertSucceeds(db.doc('rsvps/maria').delete());
+});
+
+test('portaria (conta @portaria.app) lê, busca por qrId e marca entrada, mas não apaga nem gerencia convidados/presentes', async () => {
+  await assertSucceeds(confirmBatch(anon(), 'maria', 'Maria Silva').commit());
+  const db = portaria();
+  const found = await assertSucceeds(db.collection('rsvps').where('qrId', '==', QR_ID).limit(1).get());
+  assert.equal(found.size, 1);
+  await assertSucceeds(db.doc('rsvps/maria').update({ checkedIn: true, checkedInAt: ts() }));
+  // QR já usado: rules também barram marcar entrada de novo, não só o app.
+  await assertFails(db.doc('rsvps/maria').update({ checkedIn: true, checkedInAt: ts() }));
+  await assertFails(db.doc('rsvps/maria').delete());
+  await assertFails(db.doc('guests/novo').set({ name: 'Novo' }));
+  await assertFails(db.doc('guests/maria').delete());
+  await assertFails(db.doc('gifts/novo').set({ name: 'Algo', claimedBy: null }));
+  await assertFails(db.doc('gifts/livre').delete());
 });
 
 test('noiva gerencia convidados (criar, marcar confirmed, apagar)', async () => {

@@ -203,8 +203,15 @@ const pageOverlays = document.querySelectorAll('.page-overlay');
 function openPage(id) {
   const page = document.getElementById(id);
   if (!page) return;
+  // Só uma página em aba fica aberta por vez: navegar pelo menu fixo direto
+  // de uma pra outra (sem passar por "Voltar") fechava a anterior só por
+  // fora, mas ela continuava "is-open" por baixo, bloqueando a nova.
+  pageOverlays.forEach((p) => { if (p.id !== id) p.classList.remove('is-open'); });
   page.classList.add('is-open');
   document.body.style.overflow = 'hidden';
+  // Na portaria, some com os botões de Presentes/Confirmar Presença do
+  // menu fixo: não fazem sentido pra quem está recebendo os convidados.
+  document.body.classList.toggle('portaria-open', id === 'portaria');
 }
 
 function closePage(id) {
@@ -213,6 +220,7 @@ function closePage(id) {
   page.classList.remove('is-open');
   const anyOpen = Array.from(pageOverlays).some((p) => p.classList.contains('is-open'));
   if (!anyOpen) document.body.style.overflow = '';
+  if (id === 'portaria') document.body.classList.remove('portaria-open');
 }
 
 document.querySelectorAll('[data-open-page]').forEach((btn) => {
@@ -242,8 +250,18 @@ const loginModalTitle = document.getElementById('loginModalTitle');
 const loginForm = document.getElementById('loginForm');
 const loginEmailInput = document.getElementById('loginEmail');
 const loginEmailLabel = document.getElementById('loginEmailLabel');
+const loginPasswordInput = document.getElementById('loginPassword');
+const loginPasswordToggle = document.getElementById('loginPasswordToggle');
+const loginRemember = document.getElementById('loginRemember');
 const loginFeedback = document.getElementById('loginFeedback');
 const footerLoginBtn = document.getElementById('footerLoginBtn');
+
+loginPasswordToggle.addEventListener('click', () => {
+  const showing = loginPasswordInput.type === 'text';
+  loginPasswordInput.type = showing ? 'password' : 'text';
+  loginPasswordToggle.textContent = showing ? '👁' : '🙈';
+  loginPasswordToggle.setAttribute('aria-label', showing ? 'Mostrar senha' : 'Ocultar senha');
+});
 
 // Domínio interno usado para a conta da portaria: a interface pede só um
 // "usuário" e aqui vira um e-mail fake (ex.: "recepcao" -> este domínio),
@@ -271,6 +289,9 @@ function openLoginModal(nextPage = null) {
 function closeLoginModal() {
   loginModal.classList.remove('is-open');
   loginForm.reset();
+  loginPasswordInput.type = 'password';
+  loginPasswordToggle.textContent = '👁';
+  loginPasswordToggle.setAttribute('aria-label', 'Mostrar senha');
   pendingPageAfterLogin = null;
 }
 
@@ -294,9 +315,12 @@ loginForm.addEventListener('submit', async (e) => {
   const email = nextPage === 'portaria' && !rawInput.includes('@')
     ? `${rawInput}${PORTARIA_EMAIL_DOMAIN}`
     : rawInput;
-  const password = document.getElementById('loginPassword').value;
+  const password = loginPasswordInput.value;
 
   try {
+    await auth.setPersistence(
+      loginRemember.checked ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION
+    );
     await auth.signInWithEmailAndPassword(email, password);
     closeLoginModal();
     if (nextPage) openPage(nextPage);
@@ -306,7 +330,7 @@ loginForm.addEventListener('submit', async (e) => {
   }
 });
 
-// A conta da portaria (e-mail terminado em @portaria.local) não deve ver o
+// A conta da portaria (e-mail terminado em @portaria.app) não deve ver o
 // painel da noiva (lá as regras do Firestore bloqueiam criar/apagar
 // convidados e presentes, mas exibir os botões seria confuso).
 function isNoivaAccount(user) {
@@ -314,9 +338,12 @@ function isNoivaAccount(user) {
 }
 
 // Liga/desliga a interface da noiva conforme o estado de autenticação.
+// "Sair" só aparece no lugar de "Acesso da noiva" quando é mesmo a conta da
+// noiva logada — logada como portaria, esse botão continua "Acesso da
+// noiva" (a portaria tem seu próprio jeito de sair, dentro da tela dela).
 auth.onAuthStateChanged((user) => {
   const isNoiva = isNoivaAccount(user);
-  footerLoginBtn.textContent = user ? 'Sair' : 'Acesso da noiva';
+  footerLoginBtn.textContent = isNoiva ? 'Sair' : 'Acesso da noiva';
   siteMenuAdminItem.classList.toggle('is-hidden', !isNoiva);
 
   if (!isNoiva && document.getElementById('painel').classList.contains('is-open')) {
@@ -602,8 +629,17 @@ guestCombo.addEventListener('focusout', (e) => {
 // convidado como id, e o convidado é marcado como "confirmed" no mesmo
 // batch (as regras do Firestore exigem os dois juntos).
 // ------------------------------------------------------------------
+// Prazo final para confirmar presença (regra igual no firestore.rules,
+// que é quem realmente impede a gravação depois disso).
+const RSVP_DEADLINE = new Date('2026-10-31T23:59:59-03:00');
+const rsvpClosedNotice = document.getElementById('rsvpClosedNotice');
 const rsvpForm = document.getElementById('rsvpForm');
 const formFeedback = document.getElementById('formFeedback');
+
+if (new Date() > RSVP_DEADLINE) {
+  rsvpForm.classList.add('is-hidden');
+  rsvpClosedNotice.classList.remove('is-hidden');
+}
 const rsvpDone = document.getElementById('rsvpDone');
 const rsvpDoneTitle = document.getElementById('rsvpDoneTitle');
 const rsvpDoneText = document.getElementById('rsvpDoneText');
@@ -665,6 +701,12 @@ function resetRsvpView() {
 rsvpForm.addEventListener('submit', async (e) => {
   e.preventDefault();
 
+  if (new Date() > RSVP_DEADLINE) {
+    rsvpForm.classList.add('is-hidden');
+    rsvpClosedNotice.classList.remove('is-hidden');
+    return;
+  }
+
   const guest = availableGuests.find((g) => g.id === guestIdInput.value);
   if (!guest) {
     showFeedback('Busque o seu nome e escolha-o na lista.');
@@ -686,8 +728,14 @@ rsvpForm.addEventListener('submit', async (e) => {
   }
 });
 
-rsvpDownloadBtn.addEventListener('click', () => {
-  if (lastConfirmation) QrPdf.downloadPdf(lastConfirmation.name, lastConfirmation.qrId);
+rsvpDownloadBtn.addEventListener('click', async () => {
+  if (!lastConfirmation) return;
+  try {
+    await QrPdf.downloadPdf(lastConfirmation.name, lastConfirmation.qrId);
+  } catch (err) {
+    console.error('Não foi possível gerar o PDF do QR code.', err);
+    window.alert('Não foi possível baixar o PDF agora. Tente novamente.');
+  }
 });
 
 rsvpAnotherBtn.addEventListener('click', resetRsvpView);
@@ -708,6 +756,7 @@ const adminGuestForm = document.getElementById('adminGuestForm');
 const adminGuestFeedback = document.getElementById('adminGuestFeedback');
 const adminRsvpsList = document.getElementById('adminRsvpsList');
 const adminRsvpsEmpty = document.getElementById('adminRsvpsEmpty');
+const adminRsvpFilter = document.getElementById('adminRsvpFilter');
 const adminGuestsCount = document.getElementById('adminGuestsCount');
 const adminRsvpsCount = document.getElementById('adminRsvpsCount');
 const adminGiftsList = document.getElementById('adminGiftsList');
@@ -728,6 +777,7 @@ let adminGuestsCache = []; // [{ id, name, confirmed }]
 let adminRsvpsCache = []; // [{ id, ...dados do rsvp }]
 let adminGiftsCache = []; // [{ id, ...dados do presente }]
 let adminGiftFilterValue = 'all'; // 'all' | 'available' | 'claimed'
+let adminRsvpFilterValue = 'sim'; // 'sim' | 'nao'
 
 const PRESENCA_LABELS = { sim: 'Vai comparecer', nao: 'Não vai comparecer' };
 
@@ -766,10 +816,15 @@ function renderAdminGuests() {
 
 function renderAdminRsvps() {
   adminRsvpsList.innerHTML = '';
-  adminRsvpsEmpty.classList.toggle('is-hidden', adminRsvpsCache.length > 0);
   adminRsvpsCount.textContent = adminRsvpsCache.filter((rsvp) => rsvp.presenca === 'sim').length;
 
-  adminRsvpsCache.forEach((rsvp) => {
+  const matches = adminRsvpsCache.filter((rsvp) => rsvp.presenca === adminRsvpFilterValue);
+  adminRsvpsEmpty.textContent = adminRsvpsCache.length === 0
+    ? 'Ninguém confirmou presença ainda.'
+    : 'Ninguém nesse grupo ainda.';
+  adminRsvpsEmpty.classList.toggle('is-hidden', matches.length > 0);
+
+  matches.forEach((rsvp) => {
     const item = document.createElement('div');
     item.className = 'admin__item';
     const canDownloadQr = rsvp.presenca === 'sim' && rsvp.qrId;
@@ -873,6 +928,16 @@ function stopAdminListeners() {
 
 adminGuestSearch.addEventListener('input', renderAdminGuests);
 
+adminRsvpFilter.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-rsvp-filter]');
+  if (!btn) return;
+  adminRsvpFilterValue = btn.dataset.rsvpFilter;
+  adminRsvpFilter.querySelectorAll('[data-rsvp-filter]').forEach((b) => {
+    b.classList.toggle('is-active', b === btn);
+  });
+  renderAdminRsvps();
+});
+
 adminGiftFilter.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-gift-filter]');
   if (!btn) return;
@@ -890,7 +955,12 @@ adminRsvpsList.addEventListener('click', async (e) => {
   if (!rsvp) return;
 
   if (btn.dataset.action === 'qr') {
-    QrPdf.downloadPdf(rsvp.nome, rsvp.qrId);
+    try {
+      await QrPdf.downloadPdf(rsvp.nome, rsvp.qrId);
+    } catch (err) {
+      console.error('Não foi possível gerar o PDF do QR code.', err);
+      window.alert('Não foi possível baixar o PDF agora. Tente novamente.');
+    }
     return;
   }
 
