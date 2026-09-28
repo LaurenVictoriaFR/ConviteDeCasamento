@@ -38,8 +38,13 @@ vez:
    started**, aba **Sign-in method**, e ative o provedor **E-mail/senha**.
 3. Ainda em Authentication, aba **Users**, clique em **Add user** e crie o
    e-mail e a senha que a noiva vai usar para entrar no site. Não existe
-   tela de cadastro no site — essa é a única conta e só pode ser criada
-   por aqui.
+   tela de cadastro no site — essa é a única forma de criar contas.
+3b. (Opcional) Para a Portaria ter um login separado do da noiva, clique
+   em **Add user** de novo e crie um e-mail terminado em `@portaria.app`
+   (ex.: `portaria@portaria.app`) com a senha que quiser. No site, quem
+   entrar por "Portaria" digita só a parte antes do `@` (ex.: `portaria`)
+   — o `@portaria.app` é completado sozinho. Essa conta só consegue ler
+   as confirmações e marcar entrada; não vê o painel da noiva.
 4. No menu lateral, vá em **Build > Firestore Database**, clique em
    **Create database**, escolha "modo produção" e qualquer região.
 5. Na aba **Regras** do Firestore, apague o conteúdo padrão e cole o
@@ -61,8 +66,68 @@ botão "Painel da Noiva" (lista de convidados, confirmações de presença e
 gerenciar presentes). O acesso fica em um link discreto "Acesso da noiva"
 no rodapé do site. Um convidado só consegue confirmar presença depois que
 a noiva cadastrar o nome dele na "Lista de convidados" — o formulário de
-RSVP mostra um seletor com só os nomes cadastrados, então quem não foi
+RSVP mostra um campo de busca com só os nomes cadastrados, então quem não foi
 convidado não tem como confirmar.
+
+> **Importante — regras do Firestore:** o arquivo `firestore.rules` mudou com
+> a confirmação por QR code e a portaria. Quem já tinha publicado as regras
+> antigas precisa colar o conteúdo novo em **Firestore Database > Regras** e
+> clicar em **Publicar**; sem isso a confirmação de presença e a portaria
+> não funcionam.
+>
+> **Recomendado — fechar o cadastro de contas:** em **Authentication >
+> Configurações > Ações do usuário**, desative "Ativar criação (cadastro)".
+> As regras tratam qualquer conta logada como "da noiva" (ler confirmações,
+> marcar entrada na portaria); com o cadastro aberto, qualquer pessoa que
+> conheça a chave pública do site poderia criar uma conta e se passar por ela.
+
+## Confirmação de presença e QR code
+
+- O convidado **digita para buscar o nome** (sem diferenciar acentos/maiúsculas)
+  e escolhe o dele na lista. Quem já respondeu (sim **ou** não) sai da lista.
+- Cada convidado responde **uma única vez** (garantido pelas regras do
+  Firestore, não só pela tela). Quem responde "sim" recebe na hora um **QR code
+  único** (nome completo + um id aleatório) e um botão **Baixar QR code (PDF)**.
+  Quem responde "não" não recebe QR code.
+- Para uma família confirmar várias pessoas: botão **Confirmar outra pessoa**.
+- O convidado só vê o QR nessa tela. Se perder o PDF, a noiva baixa de novo em
+  **Painel da Noiva > Confirmações > Baixar QR code (PDF)** e reenvia.
+- Se alguém respondeu errado, a noiva usa **Excluir resposta** (mesma aba): o
+  nome volta para a lista e o QR antigo deixa de valer.
+- Respostas feitas **antes** desta versão não têm QR code (aparecem marcadas
+  como "resposta antiga" no painel): exclua-as para o convidado responder de novo.
+
+## Portaria (dia do casamento)
+
+Link **Portaria** no rodapé, ao lado de "Acesso da noiva". Exige o mesmo login
+da noiva (se você abrir sem estar logado, o site pede a senha e já abre a
+portaria depois). Use no celular, com o site em **HTTPS** (a câmera só funciona
+assim — o endereço do GitHub Pages já é HTTPS).
+
+- No topo: em **verde** quantos convidados já entraram e em **vermelho**
+  quantos confirmados ainda faltam chegar. A lista mostra cada confirmado como
+  *Presente* (com o horário) ou *Aguardando*, com busca por nome.
+- **Ler QR code** abre a câmera. Resultados possíveis:
+  - *Entrada liberada* (verde): o convidado é marcado como Presente.
+  - *QR code já utilizado* (amarelo): esse QR já foi lido (só vale uma vez).
+  - *Pessoa não está na lista* (vermelho): nome + id não batem com nenhum
+    convidado confirmado.
+  - *QR code inválido* (vermelho): não é um QR deste convite.
+- Duas leituras ao mesmo tempo do mesmo QR não passam as duas: a entrada é
+  registrada numa transação do Firestore.
+
+## Testes
+
+Os testes ficam em `tests/` e **não** fazem parte do site publicado (precisam de
+Node, Java e do navegador Edge ou Chrome instalados):
+
+```bash
+cd tests
+npm install
+npm run test:unit    # busca, id aleatório, conteúdo do QR e PDF (Node puro)
+npm run test:rules   # regras do Firestore no emulador (20 casos)
+npm run test:e2e     # site inteiro no navegador, com câmera falsa lendo QR codes
+```
 
 ## O que ainda falta preencher
 
@@ -86,8 +151,14 @@ convidado não tem como confirmar.
 index.html            -> conteúdo e estrutura das seções
 css/style.css          -> estilo visual (cores, fontes, layout)
 js/main.js             -> contagem regressiva, presentes, RSVP, login e painel da noiva
+js/portaria.js         -> portaria: leitura de QR code pela câmera, validação e painel de entradas
+js/guest-utils.js      -> funções puras: busca sem acento, id aleatório, conteúdo do QR
+js/qr-pdf.js           -> gera o QR code na tela e o PDF do convidado
+js/vendor/             -> bibliotecas de terceiros (qrcode-generator, jsPDF, jsQR), sem CDN
 js/firebase-init.js    -> configuração/inicialização do Firebase (cole suas chaves aqui)
 firestore.rules        -> regras de segurança do banco (colar no Console do Firebase)
+firebase.json          -> só para os testes com emulador (tests/)
+tests/                 -> testes automatizados (ver seção "Testes")
 images/                -> fotos do casal + flor-galho-1.png / flor-galho-2.png (galhos florais, fundo transparente)
 fonts/                 -> Shelley Script LT Std (principal), Arima Madurai (secundária) e Genty (só no "&")
 ```

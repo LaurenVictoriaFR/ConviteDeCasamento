@@ -1,0 +1,17 @@
+{
+  "name": "convite-ruth-tests",
+  "private": true,
+  "description": "Testes do site do convite (funções puras, regras do Firestore e fluxo no navegador)",
+  "scripts": {
+    "test:unit": "node --test unit.test.js",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-convite \"node --test rules.test.js\"",
+    "test:e2e": "firebase emulators:exec --only firestore,auth --project demo-convite \"node --test e2e.test.js\"",
+    "test": "npm run test:unit && npm run test:rules && npm run test:e2e"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
+    "firebase": "^11.0.0",
+    "firebase-tools": "^13.0.0",
+    "playwright": "^1.48.0"
+  }
+}

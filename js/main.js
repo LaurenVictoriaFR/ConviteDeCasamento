@@ -238,18 +238,40 @@ document.addEventListener('keydown', (e) => {
 // ------------------------------------------------------------------
 const loginModal = document.getElementById('loginModal');
 const loginModalClose = document.getElementById('loginModalClose');
+const loginModalTitle = document.getElementById('loginModalTitle');
 const loginForm = document.getElementById('loginForm');
+const loginEmailInput = document.getElementById('loginEmail');
+const loginEmailLabel = document.getElementById('loginEmailLabel');
 const loginFeedback = document.getElementById('loginFeedback');
 const footerLoginBtn = document.getElementById('footerLoginBtn');
 
-function openLoginModal() {
+// Domínio interno usado para a conta da portaria: a interface pede só um
+// "usuário" e aqui vira um e-mail fake (ex.: "recepcao" -> este domínio),
+// porque o Firebase Auth só faz login com e-mail/senha. As regras do
+// Firestore reconhecem esse domínio para dar acesso restrito (ver
+// firestore.rules). A conta precisa existir com esse e-mail no Console.
+// (".local" foi tentado antes, mas o Console do Firebase rejeita esse TLD
+// na validação do formulário de usuário — ".app" passa normalmente.)
+const PORTARIA_EMAIL_DOMAIN = '@portaria.app';
+
+// Página a abrir logo depois do login (ex.: "portaria", quando o login foi
+// pedido pelo link do rodapé). Zerada sempre que o modal fecha.
+let pendingPageAfterLogin = null;
+
+function openLoginModal(nextPage = null) {
   loginFeedback.textContent = '';
+  pendingPageAfterLogin = nextPage;
+  const isPortariaLogin = nextPage === 'portaria';
+  loginModalTitle.textContent = isPortariaLogin ? 'Acesso da portaria' : 'Acesso restrito';
+  loginEmailLabel.textContent = isPortariaLogin ? 'Usuário' : 'E-mail';
+  loginEmailInput.autocomplete = isPortariaLogin ? 'off' : 'username';
   loginModal.classList.add('is-open');
 }
 
 function closeLoginModal() {
   loginModal.classList.remove('is-open');
   loginForm.reset();
+  pendingPageAfterLogin = null;
 }
 
 footerLoginBtn.addEventListener('click', () => {
@@ -267,28 +289,41 @@ loginModal.addEventListener('click', (e) => {
 
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const email = document.getElementById('loginEmail').value.trim();
+  const nextPage = pendingPageAfterLogin;
+  const rawInput = loginEmailInput.value.trim();
+  const email = nextPage === 'portaria' && !rawInput.includes('@')
+    ? `${rawInput}${PORTARIA_EMAIL_DOMAIN}`
+    : rawInput;
   const password = document.getElementById('loginPassword').value;
 
   try {
     await auth.signInWithEmailAndPassword(email, password);
     closeLoginModal();
+    if (nextPage) openPage(nextPage);
   } catch (err) {
-    loginFeedback.textContent = 'E-mail ou senha inválidos.';
+    loginFeedback.textContent = nextPage === 'portaria' ? 'Usuário ou senha inválidos.' : 'E-mail ou senha inválidos.';
     wrapUppercaseS(loginFeedback);
   }
 });
 
+// A conta da portaria (e-mail terminado em @portaria.local) não deve ver o
+// painel da noiva (lá as regras do Firestore bloqueiam criar/apagar
+// convidados e presentes, mas exibir os botões seria confuso).
+function isNoivaAccount(user) {
+  return !!user && !user.email.endsWith(PORTARIA_EMAIL_DOMAIN);
+}
+
 // Liga/desliga a interface da noiva conforme o estado de autenticação.
 auth.onAuthStateChanged((user) => {
+  const isNoiva = isNoivaAccount(user);
   footerLoginBtn.textContent = user ? 'Sair' : 'Acesso da noiva';
-  siteMenuAdminItem.classList.toggle('is-hidden', !user);
+  siteMenuAdminItem.classList.toggle('is-hidden', !isNoiva);
 
-  if (!user && document.getElementById('painel').classList.contains('is-open')) {
+  if (!isNoiva && document.getElementById('painel').classList.contains('is-open')) {
     closePage('painel');
   }
 
-  if (user) {
+  if (isNoiva) {
     startAdminListeners();
   } else {
     stopAdminListeners();
@@ -413,66 +448,249 @@ async function claimGift(giftId, fullName) {
 }
 
 // ------------------------------------------------------------------
-// CONVIDADOS (lista pública, só para preencher o seletor de nome do RSVP —
-// impede quem não foi convidado de confirmar presença)
+// CONVIDADOS (lista pública, só para o convidado achar o próprio nome no
+// formulário de RSVP — impede quem não foi convidado de confirmar presença).
+// Quem já respondeu (guests/{id}.confirmed) sai da lista de escolha.
 // ------------------------------------------------------------------
 const guestsCollection = db.collection('guests');
-const guestSelect = document.getElementById('nome');
+const rsvpsCollection = db.collection('rsvps');
+const guestCombo = document.getElementById('guestCombo');
+const guestSearchInput = document.getElementById('nomeBusca');
+const guestIdInput = document.getElementById('nome');
+const guestListbox = document.getElementById('guestListbox');
 const guestsEmptyHint = document.getElementById('guestsEmptyHint');
-const guestNamePlaceholder = guestSelect.querySelector('option');
 
-guestsCollection.orderBy('name').onSnapshot((snapshot) => {
-  guestSelect.querySelectorAll('option:not(:first-child)').forEach((opt) => opt.remove());
+let availableGuests = []; // [{ id, name }] — só quem ainda não respondeu
+let visibleGuests = []; // resultado da busca atual
+let activeGuestIndex = -1;
+let totalGuestsCount = 0;
 
-  snapshot.forEach((docSnap) => {
-    const option = document.createElement('option');
-    option.value = docSnap.id;
-    option.textContent = docSnap.data().name;
-    guestSelect.appendChild(option);
+function setGuestListOpen(open) {
+  guestListbox.classList.toggle('is-hidden', !open);
+  guestSearchInput.setAttribute('aria-expanded', String(open));
+  if (!open) setActiveGuest(-1);
+}
+
+function setActiveGuest(index) {
+  activeGuestIndex = index;
+  Array.from(guestListbox.children).forEach((li, i) => {
+    const isActive = i === index;
+    li.classList.toggle('is-active', isActive);
+    li.setAttribute('aria-selected', String(isActive));
+    if (isActive) {
+      guestSearchInput.setAttribute('aria-activedescendant', li.id);
+      li.scrollIntoView({ block: 'nearest' });
+    }
   });
+  if (index < 0) guestSearchInput.removeAttribute('aria-activedescendant');
+}
 
-  const isEmpty = snapshot.empty;
-  guestsEmptyHint.classList.toggle('is-hidden', !isEmpty);
-  guestSelect.disabled = isEmpty;
-  guestNamePlaceholder.textContent = isEmpty ? 'Nenhum convidado cadastrado' : 'Selecione seu nome na lista';
+function renderGuestOptions() {
+  visibleGuests = availableGuests.filter((guest) => GuestUtils.matchesSearch(guest.name, guestSearchInput.value));
+  guestListbox.innerHTML = '';
+
+  if (visibleGuests.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'combo__empty';
+    li.textContent = 'Nenhum nome encontrado.';
+    guestListbox.appendChild(li);
+  }
+
+  visibleGuests.forEach((guest, i) => {
+    const li = document.createElement('li');
+    li.className = 'combo__option';
+    li.id = `guestOption${i}`;
+    li.setAttribute('role', 'option');
+    li.setAttribute('aria-selected', 'false');
+    li.dataset.id = guest.id;
+    li.textContent = guest.name;
+    guestListbox.appendChild(li);
+  });
+  activeGuestIndex = -1;
+}
+
+function selectGuest(guest) {
+  guestIdInput.value = guest.id;
+  guestSearchInput.value = guest.name;
+  setGuestListOpen(false);
+}
+
+function clearGuestSelection() {
+  guestIdInput.value = '';
+}
+
+function updateGuestAvailability() {
+  let hint = '';
+  if (totalGuestsCount === 0) {
+    hint = 'A lista de convidados ainda não foi publicada. Volte em breve!';
+  } else if (availableGuests.length === 0) {
+    hint = 'Todos os convidados da lista já responderam.';
+  }
+  guestsEmptyHint.textContent = hint;
+  guestsEmptyHint.classList.toggle('is-hidden', !hint);
+  guestSearchInput.disabled = availableGuests.length === 0;
+}
+
+guestsCollection.onSnapshot((snapshot) => {
+  totalGuestsCount = snapshot.size;
+  availableGuests = snapshot.docs
+    .filter((docSnap) => !docSnap.data().confirmed)
+    .map((docSnap) => ({ id: docSnap.id, name: docSnap.data().name || '' }))
+    .filter((guest) => guest.name)
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+
+  // O nome escolhido pode ter sumido da lista (alguém acabou de responder).
+  if (guestIdInput.value && !availableGuests.some((guest) => guest.id === guestIdInput.value)) {
+    clearGuestSelection();
+  }
+  renderGuestOptions();
+  updateGuestAvailability();
 }, (err) => {
   console.error('Não foi possível carregar a lista de convidados.', err);
 });
 
+guestSearchInput.addEventListener('focus', () => {
+  renderGuestOptions();
+  setGuestListOpen(true);
+});
+
+guestSearchInput.addEventListener('input', () => {
+  // Digitou depois de escolher: a escolha anterior não vale mais.
+  clearGuestSelection();
+  renderGuestOptions();
+  setGuestListOpen(true);
+});
+
+guestSearchInput.addEventListener('keydown', (e) => {
+  const isOpen = !guestListbox.classList.contains('is-hidden');
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (!isOpen) {
+      renderGuestOptions();
+      setGuestListOpen(true);
+    }
+    if (visibleGuests.length === 0) return;
+    const step = e.key === 'ArrowDown' ? 1 : -1;
+    setActiveGuest((activeGuestIndex + step + visibleGuests.length) % visibleGuests.length);
+  } else if (e.key === 'Enter' && isOpen && activeGuestIndex >= 0) {
+    e.preventDefault();
+    selectGuest(visibleGuests[activeGuestIndex]);
+  } else if (e.key === 'Escape' && isOpen) {
+    setGuestListOpen(false);
+  }
+});
+
+// mousedown não tira o foco do campo; o click escolhe o nome.
+guestListbox.addEventListener('mousedown', (e) => e.preventDefault());
+guestListbox.addEventListener('click', (e) => {
+  const option = e.target.closest('.combo__option');
+  if (!option) return;
+  const guest = availableGuests.find((g) => g.id === option.dataset.id);
+  if (guest) selectGuest(guest);
+});
+
+document.addEventListener('click', (e) => {
+  if (!guestCombo.contains(e.target)) setGuestListOpen(false);
+});
+guestCombo.addEventListener('focusout', (e) => {
+  if (!guestCombo.contains(e.relatedTarget)) setGuestListOpen(false);
+});
+
 // ------------------------------------------------------------------
 // RSVP FORM (grava direto no Firestore — visível só no painel da noiva)
+// Cada convidado tem UMA resposta: o documento em rsvps usa o id do
+// convidado como id, e o convidado é marcado como "confirmed" no mesmo
+// batch (as regras do Firestore exigem os dois juntos).
 // ------------------------------------------------------------------
 const rsvpForm = document.getElementById('rsvpForm');
 const formFeedback = document.getElementById('formFeedback');
+const rsvpDone = document.getElementById('rsvpDone');
+const rsvpDoneTitle = document.getElementById('rsvpDoneTitle');
+const rsvpDoneText = document.getElementById('rsvpDoneText');
+const rsvpQrBox = document.getElementById('rsvpQrBox');
+const rsvpQrImg = document.getElementById('rsvpQrImg');
+const rsvpQrName = document.getElementById('rsvpQrName');
+const rsvpDownloadBtn = document.getElementById('rsvpDownloadBtn');
+const rsvpAnotherBtn = document.getElementById('rsvpAnotherBtn');
+let lastConfirmation = null; // { name, qrId } — só em memória, para o botão de baixar o PDF
+
+async function submitRsvp({ guestId, name, presenca, mensagem }) {
+  const qrId = presenca === 'sim' ? GuestUtils.generateQrId() : null;
+  const batch = db.batch();
+  batch.set(rsvpsCollection.doc(guestId), {
+    guestId,
+    nome: name,
+    presenca,
+    mensagem,
+    qrId,
+    checkedIn: false,
+    checkedInAt: null,
+    criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+  });
+  batch.update(guestsCollection.doc(guestId), { confirmed: true });
+  await batch.commit();
+  return qrId;
+}
+
+function showRsvpDone({ name, presenca, qrId }) {
+  rsvpForm.classList.add('is-hidden');
+  rsvpDone.classList.remove('is-hidden');
+
+  if (presenca === 'sim') {
+    lastConfirmation = { name, qrId };
+    rsvpDoneTitle.textContent = 'Presença confirmada! 💛';
+    rsvpDoneText.textContent = 'Obrigado por avisar. Este é o seu QR code de entrada:';
+    rsvpQrImg.src = QrPdf.previewDataUrl(name, qrId);
+    rsvpQrName.textContent = name;
+    rsvpQrBox.classList.remove('is-hidden');
+  } else {
+    lastConfirmation = null;
+    rsvpDoneTitle.textContent = 'Recebemos a sua resposta';
+    rsvpDoneText.textContent = 'Sentiremos a sua falta. Obrigado por avisar! 💛';
+    rsvpQrBox.classList.add('is-hidden');
+  }
+  wrapUppercaseS(rsvpDone);
+}
+
+function resetRsvpView() {
+  lastConfirmation = null;
+  rsvpDone.classList.add('is-hidden');
+  rsvpQrBox.classList.add('is-hidden');
+  rsvpQrImg.removeAttribute('src');
+  rsvpForm.classList.remove('is-hidden');
+  rsvpForm.reset();
+  clearGuestSelection();
+}
 
 rsvpForm.addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  const guestId = guestSelect.value;
-  const guestName = guestSelect.selectedOptions[0] ? guestSelect.selectedOptions[0].textContent : '';
-  if (!guestId) return;
+  const guest = availableGuests.find((g) => g.id === guestIdInput.value);
+  if (!guest) {
+    showFeedback('Busque o seu nome e escolha-o na lista.');
+    return;
+  }
 
   const presenca = rsvpForm.querySelector('input[name="presenca"]:checked').value;
   const mensagem = document.getElementById('mensagem').value.trim();
 
   try {
-    await db.collection('rsvps').add({
-      guestId,
-      nome: guestName,
-      presenca,
-      mensagem,
-      criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
-    });
-    showFeedback('Presença confirmada! Obrigado por avisar. 💛');
-    rsvpForm.reset();
+    const qrId = await submitRsvp({ guestId: guest.id, name: guest.name, presenca, mensagem });
+    showRsvpDone({ name: guest.name, presenca, qrId });
   } catch (err) {
     if (err.code === 'permission-denied') {
-      showFeedback('Seu nome não foi encontrado na lista de convidados. Fale com os noivos.');
+      showFeedback('Não foi possível confirmar: esse nome já respondeu ou não está na lista. Fale com os noivos.');
     } else {
       showFeedback('Não foi possível enviar agora. Tente novamente em instantes.');
     }
   }
 });
+
+rsvpDownloadBtn.addEventListener('click', () => {
+  if (lastConfirmation) QrPdf.downloadPdf(lastConfirmation.name, lastConfirmation.qrId);
+});
+
+rsvpAnotherBtn.addEventListener('click', resetRsvpView);
 
 function showFeedback(message) {
   formFeedback.textContent = message;
@@ -485,6 +703,7 @@ function showFeedback(message) {
 // ------------------------------------------------------------------
 const adminGuestsList = document.getElementById('adminGuestsList');
 const adminGuestsEmpty = document.getElementById('adminGuestsEmpty');
+const adminGuestSearch = document.getElementById('adminGuestSearch');
 const adminGuestForm = document.getElementById('adminGuestForm');
 const adminGuestFeedback = document.getElementById('adminGuestFeedback');
 const adminRsvpsList = document.getElementById('adminRsvpsList');
@@ -493,6 +712,7 @@ const adminGuestsCount = document.getElementById('adminGuestsCount');
 const adminRsvpsCount = document.getElementById('adminRsvpsCount');
 const adminGiftsList = document.getElementById('adminGiftsList');
 const adminGiftsEmpty = document.getElementById('adminGiftsEmpty');
+const adminGiftFilter = document.getElementById('adminGiftFilter');
 const adminGiftForm = document.getElementById('adminGiftForm');
 const adminGiftFeedback = document.getElementById('adminGiftFeedback');
 const adminGiftsAvailableCount = document.getElementById('adminGiftsAvailableCount');
@@ -501,6 +721,13 @@ const adminGiftsClaimedCount = document.getElementById('adminGiftsClaimedCount')
 let unsubscribeAdminGuests = null;
 let unsubscribeRsvps = null;
 let unsubscribeAdminGifts = null;
+
+// Últimos dados recebidos do Firestore: as buscas/filtros re-desenham a
+// lista a partir daqui, sem consultar o banco de novo.
+let adminGuestsCache = []; // [{ id, name, confirmed }]
+let adminRsvpsCache = []; // [{ id, ...dados do rsvp }]
+let adminGiftsCache = []; // [{ id, ...dados do presente }]
+let adminGiftFilterValue = 'all'; // 'all' | 'available' | 'claimed'
 
 const PRESENCA_LABELS = { sim: 'Vai comparecer', nao: 'Não vai comparecer' };
 
@@ -515,74 +742,110 @@ adminTabs.forEach((tab) => {
   });
 });
 
+function renderAdminGuests() {
+  const matches = adminGuestsCache.filter((guest) => GuestUtils.matchesSearch(guest.name, adminGuestSearch.value));
+  adminGuestsList.innerHTML = '';
+  adminGuestsCount.textContent = adminGuestsCache.length;
+
+  adminGuestsEmpty.textContent = adminGuestsCache.length === 0
+    ? 'Nenhum convidado cadastrado ainda.'
+    : 'Nenhum convidado encontrado.';
+  adminGuestsEmpty.classList.toggle('is-hidden', matches.length > 0);
+
+  matches.forEach((guest) => {
+    const item = document.createElement('div');
+    item.className = 'admin__item';
+    item.innerHTML = `
+      <p class="admin__item-title">${escapeHtml(guest.name)}${guest.confirmed ? ' <span class="admin__tag">já respondeu</span>' : ''}</p>
+      <button class="admin__item-delete" data-id="${guest.id}">Excluir</button>
+    `;
+    adminGuestsList.appendChild(item);
+  });
+  wrapUppercaseS(adminGuestsList);
+}
+
+function renderAdminRsvps() {
+  adminRsvpsList.innerHTML = '';
+  adminRsvpsEmpty.classList.toggle('is-hidden', adminRsvpsCache.length > 0);
+  adminRsvpsCount.textContent = adminRsvpsCache.filter((rsvp) => rsvp.presenca === 'sim').length;
+
+  adminRsvpsCache.forEach((rsvp) => {
+    const item = document.createElement('div');
+    item.className = 'admin__item';
+    const canDownloadQr = rsvp.presenca === 'sim' && rsvp.qrId;
+    item.innerHTML = `
+      <p class="admin__item-title">${escapeHtml(rsvp.nome || '(sem nome)')}${rsvp.checkedIn ? ' <span class="admin__tag admin__tag--ok">já entrou</span>' : ''}</p>
+      <p class="admin__item-meta">${PRESENCA_LABELS[rsvp.presenca] || rsvp.presenca}${rsvp.presenca === 'sim' && !rsvp.qrId ? ' · sem QR code (resposta antiga: exclua para o convidado responder de novo)' : ''}</p>
+      ${rsvp.mensagem ? `<p class="admin__item-message">"${escapeHtml(rsvp.mensagem)}"</p>` : ''}
+      <div class="admin__item-actions">
+        ${canDownloadQr ? `<button class="admin__item-action" data-action="qr" data-id="${rsvp.id}">Baixar QR code (PDF)</button>` : ''}
+        <button class="admin__item-delete" data-action="delete" data-id="${rsvp.id}">Excluir resposta</button>
+      </div>
+    `;
+    adminRsvpsList.appendChild(item);
+  });
+  wrapUppercaseS(adminRsvpsList);
+}
+
+function renderAdminGifts() {
+  const claimedCount = adminGiftsCache.filter((gift) => gift.claimedBy).length;
+  adminGiftsClaimedCount.textContent = claimedCount;
+  adminGiftsAvailableCount.textContent = adminGiftsCache.length - claimedCount;
+
+  const matches = adminGiftsCache.filter((gift) => {
+    if (adminGiftFilterValue === 'available') return !gift.claimedBy;
+    if (adminGiftFilterValue === 'claimed') return Boolean(gift.claimedBy);
+    return true;
+  });
+
+  const emptyMessages = {
+    all: 'Nenhum presente cadastrado ainda.',
+    available: 'Nenhum presente disponível.',
+    claimed: 'Nenhum presente indisponível.',
+  };
+  adminGiftsEmpty.textContent = emptyMessages[adminGiftFilterValue];
+  adminGiftsEmpty.classList.toggle('is-hidden', matches.length > 0);
+
+  adminGiftsList.innerHTML = '';
+  matches.forEach((gift) => {
+    const item = document.createElement('div');
+    item.className = 'admin__item';
+    item.innerHTML = `
+      ${gift.image ? `<img class="admin__item-thumb" src="${gift.image}" alt="" />` : ''}
+      <p class="admin__item-title">${escapeHtml(gift.name)}</p>
+      <p class="admin__item-meta">${gift.claimedBy ? `Escolhido por <strong>${escapeHtml(gift.claimedBy)}</strong>` : 'Disponível'}</p>
+      <button class="admin__item-delete" data-id="${gift.id}">Excluir</button>
+    `;
+    adminGiftsList.appendChild(item);
+  });
+  wrapUppercaseS(adminGiftsList);
+}
+
 function startAdminListeners() {
   if (unsubscribeRsvps || unsubscribeAdminGifts || unsubscribeAdminGuests) return; // já estão rodando
 
-  unsubscribeAdminGuests = guestsCollection.orderBy('name').onSnapshot(
+  unsubscribeAdminGuests = guestsCollection.onSnapshot(
     (snapshot) => {
-      adminGuestsList.innerHTML = '';
-      adminGuestsEmpty.classList.toggle('is-hidden', !snapshot.empty);
-      adminGuestsCount.textContent = snapshot.size;
-
-      snapshot.forEach((docSnap) => {
-        const guest = docSnap.data();
-        const item = document.createElement('div');
-        item.className = 'admin__item';
-        item.innerHTML = `
-          <p class="admin__item-title">${escapeHtml(guest.name)}</p>
-          <button class="admin__item-delete" data-id="${docSnap.id}">Excluir</button>
-        `;
-        adminGuestsList.appendChild(item);
-      });
-      wrapUppercaseS(adminGuestsList);
+      adminGuestsCache = snapshot.docs
+        .map((docSnap) => ({ id: docSnap.id, name: docSnap.data().name || '', confirmed: Boolean(docSnap.data().confirmed) }))
+        .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+      renderAdminGuests();
     },
     (err) => console.error('Não foi possível carregar a lista de convidados.', err)
   );
 
-  unsubscribeRsvps = db.collection('rsvps').orderBy('criadoEm', 'desc').onSnapshot(
+  unsubscribeRsvps = rsvpsCollection.orderBy('criadoEm', 'desc').onSnapshot(
     (snapshot) => {
-      adminRsvpsList.innerHTML = '';
-      adminRsvpsEmpty.classList.toggle('is-hidden', !snapshot.empty);
-      adminRsvpsCount.textContent = snapshot.docs.filter((docSnap) => docSnap.data().presenca === 'sim').length;
-
-      snapshot.forEach((docSnap) => {
-        const rsvp = docSnap.data();
-        const item = document.createElement('div');
-        item.className = 'admin__item';
-        item.innerHTML = `
-          <p class="admin__item-title">${escapeHtml(rsvp.nome || '(sem nome)')}</p>
-          <p class="admin__item-meta">${PRESENCA_LABELS[rsvp.presenca] || rsvp.presenca}</p>
-          ${rsvp.mensagem ? `<p class="admin__item-message">"${escapeHtml(rsvp.mensagem)}"</p>` : ''}
-        `;
-        adminRsvpsList.appendChild(item);
-      });
-      wrapUppercaseS(adminRsvpsList);
+      adminRsvpsCache = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+      renderAdminRsvps();
     },
     (err) => console.error('Não foi possível carregar as confirmações.', err)
   );
 
   unsubscribeAdminGifts = giftsCollection.orderBy('createdAt', 'desc').onSnapshot(
     (snapshot) => {
-      adminGiftsList.innerHTML = '';
-      adminGiftsEmpty.classList.toggle('is-hidden', !snapshot.empty);
-
-      const claimedCount = snapshot.docs.filter((docSnap) => docSnap.data().claimedBy).length;
-      adminGiftsClaimedCount.textContent = claimedCount;
-      adminGiftsAvailableCount.textContent = snapshot.size - claimedCount;
-
-      snapshot.forEach((docSnap) => {
-        const gift = docSnap.data();
-        const item = document.createElement('div');
-        item.className = 'admin__item';
-        item.innerHTML = `
-          ${gift.image ? `<img class="admin__item-thumb" src="${gift.image}" alt="" />` : ''}
-          <p class="admin__item-title">${escapeHtml(gift.name)}</p>
-          <p class="admin__item-meta">${gift.claimedBy ? `Escolhido por <strong>${escapeHtml(gift.claimedBy)}</strong>` : 'Disponível'}</p>
-          <button class="admin__item-delete" data-id="${docSnap.id}">Excluir</button>
-        `;
-        adminGiftsList.appendChild(item);
-      });
-      wrapUppercaseS(adminGiftsList);
+      adminGiftsCache = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+      renderAdminGifts();
     },
     (err) => console.error('Não foi possível carregar os presentes.', err)
   );
@@ -595,6 +858,10 @@ function stopAdminListeners() {
   unsubscribeAdminGuests = null;
   unsubscribeRsvps = null;
   unsubscribeAdminGifts = null;
+  adminGuestsCache = [];
+  adminRsvpsCache = [];
+  adminGiftsCache = [];
+  adminGuestSearch.value = '';
   adminGuestsList.innerHTML = '';
   adminRsvpsList.innerHTML = '';
   adminGiftsList.innerHTML = '';
@@ -603,6 +870,47 @@ function stopAdminListeners() {
   adminGiftsAvailableCount.textContent = '0';
   adminGiftsClaimedCount.textContent = '0';
 }
+
+adminGuestSearch.addEventListener('input', renderAdminGuests);
+
+adminGiftFilter.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-gift-filter]');
+  if (!btn) return;
+  adminGiftFilterValue = btn.dataset.giftFilter;
+  adminGiftFilter.querySelectorAll('[data-gift-filter]').forEach((b) => {
+    b.classList.toggle('is-active', b === btn);
+  });
+  renderAdminGifts();
+});
+
+adminRsvpsList.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const rsvp = adminRsvpsCache.find((r) => r.id === btn.dataset.id);
+  if (!rsvp) return;
+
+  if (btn.dataset.action === 'qr') {
+    QrPdf.downloadPdf(rsvp.nome, rsvp.qrId);
+    return;
+  }
+
+  // Excluir a resposta libera o convidado para responder de novo (o QR
+  // antigo deixa de valer, porque o registro some).
+  const warning = `Excluir a resposta de ${rsvp.nome}? O nome volta para a lista de confirmação e o QR code atual deixa de valer.`;
+  if (!window.confirm(warning)) return;
+  try {
+    const batch = db.batch();
+    batch.delete(rsvpsCollection.doc(rsvp.id));
+    if (rsvp.guestId) {
+      const guestRef = guestsCollection.doc(rsvp.guestId);
+      if ((await guestRef.get()).exists) batch.update(guestRef, { confirmed: false });
+    }
+    await batch.commit();
+  } catch (err) {
+    console.error('Não foi possível excluir a resposta.', err);
+    window.alert('Não foi possível excluir agora. Tente novamente.');
+  }
+});
 
 adminGuestForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -635,7 +943,11 @@ adminGuestForm.addEventListener('submit', async (e) => {
 adminGuestsList.addEventListener('click', async (e) => {
   const btn = e.target.closest('.admin__item-delete');
   if (!btn) return;
-  await guestsCollection.doc(btn.dataset.id).delete();
+  // Junto com o convidado some a resposta dele (mesmo id), se existir.
+  const batch = db.batch();
+  batch.delete(guestsCollection.doc(btn.dataset.id));
+  batch.delete(rsvpsCollection.doc(btn.dataset.id));
+  await batch.commit();
 });
 
 // Foto do presente: redimensiona no navegador e grava como base64 direto

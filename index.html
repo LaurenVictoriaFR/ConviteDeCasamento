@@ -248,11 +248,24 @@
 
       <form class="rsvp__form" id="rsvpForm">
         <div class="form__row">
-          <label for="nome">Seu nome</label>
-          <select id="nome" name="nome" required>
-            <option value="" disabled selected>Selecione seu nome na lista</option>
-          </select>
-          <p class="form__hint is-hidden" id="guestsEmptyHint">A lista de convidados ainda não foi publicada. Volte em breve!</p>
+          <label for="nomeBusca">Seu nome</label>
+          <div class="combo" id="guestCombo">
+            <input
+              type="text"
+              id="nomeBusca"
+              class="combo__input"
+              role="combobox"
+              aria-expanded="false"
+              aria-controls="guestListbox"
+              aria-autocomplete="list"
+              autocomplete="off"
+              placeholder="Digite para buscar seu nome"
+            />
+            <!-- id do convidado escolhido na lista (preenchido pelo JS) -->
+            <input type="hidden" id="nome" name="nome" />
+            <ul class="combo__list is-hidden" id="guestListbox" role="listbox" aria-label="Nomes da lista de convidados"></ul>
+          </div>
+          <p class="form__hint is-hidden" id="guestsEmptyHint"></p>
         </div>
 
         <div class="form__row">
@@ -271,6 +284,22 @@
         <button type="submit" class="btn btn--primary">Enviar confirmação</button>
         <p class="form__feedback" id="formFeedback"></p>
       </form>
+
+      <!-- Resposta enviada: no "sim" mostra o QR code para baixar em PDF -->
+      <div class="rsvp__form rsvp__done is-hidden" id="rsvpDone" aria-live="polite">
+        <h3 class="rsvp__done-title" id="rsvpDoneTitle"></h3>
+        <p class="rsvp__done-text" id="rsvpDoneText"></p>
+        <div class="rsvp__qr is-hidden" id="rsvpQrBox">
+          <img class="rsvp__qr-img" id="rsvpQrImg" alt="Seu QR code de entrada" />
+          <p class="rsvp__qr-name" id="rsvpQrName"></p>
+          <button type="button" class="btn btn--primary" id="rsvpDownloadBtn">Baixar QR code (PDF)</button>
+          <p class="rsvp__qr-hint">
+            Guarde esse PDF: ele é a sua entrada e só pode ser lido uma vez na portaria.
+            Se perder o arquivo, fale com os noivos.
+          </p>
+        </div>
+        <button type="button" class="btn btn--ghost" id="rsvpAnotherBtn">Confirmar outra pessoa</button>
+      </div>
     </div>
   </section>
 
@@ -300,6 +329,7 @@ João Souza"></textarea>
           <p class="form__feedback" id="adminGuestFeedback"></p>
         </form>
 
+        <input type="search" class="admin__search" id="adminGuestSearch" placeholder="Pesquisar convidado pelo nome" aria-label="Pesquisar convidado pelo nome" autocomplete="off" />
         <p class="admin__empty is-hidden" id="adminGuestsEmpty">Nenhum convidado cadastrado ainda.</p>
         <div class="admin__list" id="adminGuestsList"></div>
       </div>
@@ -336,18 +366,68 @@ João Souza"></textarea>
           <p class="form__feedback" id="adminGiftFeedback"></p>
         </form>
 
+        <div class="admin__filter" id="adminGiftFilter" role="group" aria-label="Filtrar presentes">
+          <button type="button" class="admin__filter-btn is-active" data-gift-filter="all">Todos</button>
+          <button type="button" class="admin__filter-btn" data-gift-filter="available">Disponíveis</button>
+          <button type="button" class="admin__filter-btn" data-gift-filter="claimed">Indisponíveis</button>
+        </div>
         <p class="admin__empty is-hidden" id="adminGiftsEmpty">Nenhum presente cadastrado ainda.</p>
         <div class="admin__list" id="adminGiftsList"></div>
       </div>
     </div>
   </section>
 
+  <!-- PORTARIA (leitura dos QR codes no dia do casamento; exige login) -->
+  <section class="admin portaria page-overlay" id="portaria">
+    <button class="page-overlay__back" data-close-page="portaria">&larr; Voltar ao convite</button>
+    <div class="container">
+      <p class="section-eyebrow">Dia do casamento</p>
+      <h2 class="section-title">Portaria</h2>
+
+      <div class="admin__block">
+        <div class="portaria__stats">
+          <div class="portaria__stat portaria__stat--in">
+            <span class="portaria__stat-number" id="portariaInCount">0</span>
+            <span class="portaria__stat-label">já entraram</span>
+          </div>
+          <div class="portaria__stat portaria__stat--out">
+            <span class="portaria__stat-number" id="portariaPendingCount">0</span>
+            <span class="portaria__stat-label">ainda faltam chegar</span>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn--primary portaria__scan-btn" id="portariaScanBtn">📷 Ler QR code</button>
+
+        <div class="portaria__result is-hidden" id="portariaResult" role="status" aria-live="assertive">
+          <p class="portaria__result-title" id="portariaResultTitle"></p>
+          <p class="portaria__result-text" id="portariaResultText"></p>
+        </div>
+
+        <h3 class="admin__block-title">Convidados confirmados</h3>
+        <input type="search" class="admin__search" id="portariaSearch" placeholder="Pesquisar convidado pelo nome" aria-label="Pesquisar convidado confirmado pelo nome" autocomplete="off" />
+        <p class="admin__empty is-hidden" id="portariaEmpty">Nenhum convidado confirmado ainda.</p>
+        <div class="admin__list" id="portariaList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LEITOR DE QR CODE (câmera em tela cheia, aberto pela Portaria) -->
+  <div class="scanner" id="scanner" aria-hidden="true">
+    <video class="scanner__video" id="scannerVideo" playsinline muted></video>
+    <div class="scanner__frame" aria-hidden="true"></div>
+    <p class="scanner__hint" id="scannerHint">Aponte a câmera para o QR code do convidado</p>
+    <button type="button" class="btn scanner__cancel" id="scannerCancel">Cancelar</button>
+  </div>
+
   <!-- FOOTER -->
   <footer class="footer">
     <p class="footer__names">Ruth <span class="amp">&amp;</span> Víctor</p>
     <p class="footer__date">5 de dezembro de 2026</p>
     <p class="footer__made">&copy; 2026 Ruth &amp; Víctor. Todos os direitos reservados. &nbsp;|&nbsp; Desenvolvido por Lauren Victoria</p>
-    <button class="footer__login-link" id="footerLoginBtn">Acesso da noiva</button>
+    <div class="footer__links">
+      <button class="footer__login-link" id="footerLoginBtn">Acesso da noiva</button>
+      <button class="footer__login-link" id="footerPortariaBtn">Portaria</button>
+    </div>
   </footer>
 
   <!-- GIFT MODAL -->
@@ -371,11 +451,11 @@ João Souza"></textarea>
   <div class="modal" id="loginModal">
     <div class="modal__box">
       <button class="modal__close" id="loginModalClose" aria-label="Fechar">&times;</button>
-      <h3>Acesso da noiva</h3>
+      <h3 id="loginModalTitle">Acesso restrito</h3>
       <form class="rsvp__form" id="loginForm">
         <div class="form__row">
-          <label for="loginEmail">E-mail</label>
-          <input type="email" id="loginEmail" name="loginEmail" required autocomplete="username" />
+          <label for="loginEmail" id="loginEmailLabel">E-mail</label>
+          <input type="text" id="loginEmail" name="loginEmail" required autocomplete="username" />
         </div>
         <div class="form__row">
           <label for="loginPassword">Senha</label>
@@ -434,6 +514,13 @@ João Souza"></textarea>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
   <script src="js/firebase-init.js"></script>
+  <script src="js/vendor/qrcode.js"></script>
+  <script src="js/vendor/qrcode_UTF8.js"></script>
+  <script src="js/vendor/jspdf.umd.min.js"></script>
+  <script src="js/vendor/jsQR.js"></script>
+  <script src="js/guest-utils.js"></script>
+  <script src="js/qr-pdf.js"></script>
   <script src="js/main.js"></script>
+  <script src="js/portaria.js"></script>
 </body>
 </html>

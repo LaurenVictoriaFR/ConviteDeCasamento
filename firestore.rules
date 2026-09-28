@@ -3,37 +3,67 @@ rules_version = '2';
 // Regras do Firestore para o site do casamento.
 // Cole este conteúdo em: Firebase Console > Firestore Database > Regras.
 //
+// Duas contas autenticadas possíveis:
+// - Noiva: e-mail normal, acesso completo (convidados, presentes, RSVPs).
+// - Portaria: conta cujo e-mail termina em "@portaria.app" (a interface
+//   pede só um "usuário", que vira esse e-mail por trás dos panos — ver
+//   js/main.js). Só pode ler as confirmações e marcar entrada (checkedIn).
+//
 // Resumo:
 // - guests: lista de convidados. Qualquer um pode ler (o formulário de RSVP
 //   precisa listar os nomes para o convidado escolher o seu); só a noiva
-//   autenticada pode adicionar/remover convidados.
+//   autenticada pode adicionar/remover convidados. Um convidado (sem login)
+//   só pode alterar um campo: marcar `confirmed: true` no PRÓPRIO registro,
+//   uma única vez, e só se a resposta dele (rsvps/{id}) estiver sendo criada
+//   no mesmo batch — assim ninguém "esconde" nomes da lista sem responder.
 // - gifts: qualquer um pode ler (para ver a lista de presentes disponíveis);
 //   só a noiva autenticada pode criar/apagar presentes; um convidado pode
 //   "escolher" um presente (gravar claimedBy/claimedAt) só enquanto ele
 //   ainda estiver disponível (claimedBy == null) e sem mexer em mais nada
 //   do documento.
-// - rsvps: só pode ser criada uma confirmação referenciando um guestId que
-//   exista de fato na lista de convidados (impede gente de fora da lista
-//   de confirmar presença); só a noiva autenticada pode ler/listar as
-//   confirmações (mensagens dos convidados não ficam públicas).
+// - rsvps: o documento tem o MESMO id do convidado (rsvps/{guestId}), então
+//   cada convidado só consegue responder uma vez. A criação exige que o
+//   convidado exista na lista, ainda não tenha respondido, e que o nome
+//   gravado seja exatamente o da lista. Quem responde "sim" recebe um `qrId`
+//   aleatório (usado no QR code); `checkedIn` nasce sempre falso. Noiva e
+//   portaria autenticadas podem ler/listar; só a noiva pode apagar ou mudar
+//   qualquer campo; a portaria só pode marcar entrada (checkedIn +
+//   checkedInAt), nada além disso.
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function isPortaria() {
+      return request.auth != null
+        && request.auth.token.get('email', '').matches('.*@portaria\\.app');
+    }
+
+    function isNoiva() {
+      return request.auth != null && !isPortaria();
+    }
+
     match /guests/{guestId} {
       allow read: if true;
-      allow create, delete: if request.auth != null;
+      allow create, delete: if isNoiva();
+
+      allow update: if isNoiva()
+        || (
+          resource.data.get('confirmed', false) == false
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['confirmed'])
+          && request.resource.data.confirmed == true
+          && existsAfter(/databases/$(database)/documents/rsvps/$(guestId))
+        );
     }
 
     match /gifts/{giftId} {
       allow read: if true;
-      allow create, delete: if request.auth != null;
+      allow create, delete: if isNoiva();
 
       // Atualização feita pela noiva (autenticada): livre.
       // Atualização feita por um convidado (sem login): só é permitida se
       // o presente ainda estiver disponível e se o convidado só estiver
       // alterando claimedBy/claimedAt (não pode mexer em nome, descrição
       // etc.).
-      allow update: if request.auth != null
+      allow update: if isNoiva()
         || (
           resource.data.claimedBy == null
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['claimedBy', 'claimedAt'])
@@ -43,10 +73,37 @@ service cloud.firestore {
     }
 
     match /rsvps/{rsvpId} {
-      allow create: if request.resource.data.guestId is string
-        && exists(/databases/$(database)/documents/guests/$(request.resource.data.guestId));
-      allow read, list: if request.auth != null;
-      allow update, delete: if request.auth != null;
+      allow create: if request.resource.data.keys().hasOnly(
+          ['guestId', 'nome', 'presenca', 'mensagem', 'qrId', 'checkedIn', 'checkedInAt', 'criadoEm']
+        )
+        && request.resource.data.guestId == rsvpId
+        && exists(/databases/$(database)/documents/guests/$(rsvpId))
+        && get(/databases/$(database)/documents/guests/$(rsvpId)).data.get('confirmed', false) == false
+        && request.resource.data.nome == get(/databases/$(database)/documents/guests/$(rsvpId)).data.name
+        && request.resource.data.presenca in ['sim', 'nao']
+        && request.resource.data.mensagem is string
+        && request.resource.data.mensagem.size() <= 1000
+        && (
+          (request.resource.data.presenca == 'sim'
+            && request.resource.data.qrId is string
+            && request.resource.data.qrId.size() >= 32)
+          || (request.resource.data.presenca == 'nao' && request.resource.data.qrId == null)
+        )
+        && request.resource.data.checkedIn == false
+        && request.resource.data.checkedInAt == null
+        && request.resource.data.criadoEm == request.time;
+
+      allow read, list: if isNoiva() || isPortaria();
+
+      allow update: if isNoiva()
+        || (
+          isPortaria()
+          && resource.data.checkedIn == false
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['checkedIn', 'checkedInAt'])
+          && request.resource.data.checkedIn == true
+        );
+
+      allow delete: if isNoiva();
     }
   }
 }
