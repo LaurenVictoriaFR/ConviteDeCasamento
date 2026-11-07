@@ -629,17 +629,8 @@ guestCombo.addEventListener('focusout', (e) => {
 // convidado como id, e o convidado é marcado como "confirmed" no mesmo
 // batch (as regras do Firestore exigem os dois juntos).
 // ------------------------------------------------------------------
-// Prazo final para confirmar presença (regra igual no firestore.rules,
-// que é quem realmente impede a gravação depois disso).
-const RSVP_DEADLINE = new Date('2026-10-31T23:59:59-03:00');
-const rsvpClosedNotice = document.getElementById('rsvpClosedNotice');
 const rsvpForm = document.getElementById('rsvpForm');
 const formFeedback = document.getElementById('formFeedback');
-
-if (new Date() > RSVP_DEADLINE) {
-  rsvpForm.classList.add('is-hidden');
-  rsvpClosedNotice.classList.remove('is-hidden');
-}
 const rsvpDone = document.getElementById('rsvpDone');
 const rsvpDoneTitle = document.getElementById('rsvpDoneTitle');
 const rsvpDoneText = document.getElementById('rsvpDoneText');
@@ -700,12 +691,6 @@ function resetRsvpView() {
 
 rsvpForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-
-  if (new Date() > RSVP_DEADLINE) {
-    rsvpForm.classList.add('is-hidden');
-    rsvpClosedNotice.classList.remove('is-hidden');
-    return;
-  }
 
   const guest = availableGuests.find((g) => g.id === guestIdInput.value);
   if (!guest) {
